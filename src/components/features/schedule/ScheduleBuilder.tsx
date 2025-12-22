@@ -1,18 +1,19 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
-import { useAppointments } from "@/hooks/useAppointments";
+import { useSchedule } from "@/hooks/useSchedule";
 import { Loader2 } from "lucide-react";
 
-export default function AppointmentCalendarPage() {
-  const { data, isLoading, error } = useAppointments({ per_page: 1000 }); // Fetch all appointments for the calendar
+export function ScheduleBuilder() {
+  const [filters, setFilters] = useState({});
+  const { data, isLoading, error } = useSchedule(filters);
 
   const events = useMemo(() => {
-    return data?.data.map((appointment) => ({
+    return data?.map((appointment) => ({
       id: String(appointment.id),
       title: `${appointment.client.name} w/ ${appointment.team.name}`,
       start: `${appointment.date}T${appointment.start_time}`,
@@ -37,13 +38,13 @@ export default function AppointmentCalendarPage() {
   if (error) {
     return (
       <div className="text-red-500">
-        Error loading appointments: {error.message}
+        Error loading schedule: {error.message}
       </div>
     );
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+    <div className="h-[800px]">
       <FullCalendar
         plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
         initialView="timeGridWeek"
@@ -57,6 +58,7 @@ export default function AppointmentCalendarPage() {
         selectable
         selectMirror
         dayMaxEvents
+        droppable
       />
     </div>
   );
