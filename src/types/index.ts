@@ -662,7 +662,6 @@ export interface ChatRoom {
   type: 'direct' | 'group';
   participants: User[];
   last_message?: ChatMessage;
-  messages?: ChatMessage[];
   unread_count: number;
   created_at: string;
 }

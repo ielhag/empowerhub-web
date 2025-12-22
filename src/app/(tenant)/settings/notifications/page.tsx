@@ -1,149 +1,241 @@
-"use client";
+'use client';
 
-import {
-  useNotificationSettings,
-  useUpdateNotificationSettings,
-} from "@/hooks/useSettings";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import { Loader2 } from "lucide-react";
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { useNotificationSettings, useUpdateNotificationSettings } from '@/hooks/useSettings';
+import { cn } from '@/lib/utils';
+import { ChevronLeft, Bell, Mail, Smartphone, Loader2, Check } from 'lucide-react';
 
-const schema = z.object({
-  email_notifications: z.boolean(),
-  push_notifications: z.boolean(),
-  appointment_reminders: z.boolean(),
-  schedule_updates: z.boolean(),
-  chat_messages: z.boolean(),
-  system_alerts: z.boolean(),
-});
+interface ToggleSwitchProps {
+  enabled: boolean;
+  onChange: (enabled: boolean) => void;
+  disabled?: boolean;
+}
 
-export function NotificationsSettings() {
-  const { data: settings, isLoading } = useNotificationSettings();
-  const updateSettings = useUpdateNotificationSettings();
+function ToggleSwitch({ enabled, onChange, disabled }: ToggleSwitchProps) {
+  return (
+    <button
+      type="button"
+      onClick={() => onChange(!enabled)}
+      disabled={disabled}
+      className={cn(
+        'relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800',
+        enabled ? 'bg-violet-600' : 'bg-gray-200 dark:bg-gray-700',
+        disabled && 'opacity-50 cursor-not-allowed'
+      )}
+    >
+      <span
+        className={cn(
+          'inline-block h-4 w-4 transform rounded-full bg-white transition-transform',
+          enabled ? 'translate-x-6' : 'translate-x-1'
+        )}
+      />
+    </button>
+  );
+}
 
-  const {
-    register,
-    handleSubmit,
-    formState: { isSubmitting },
-  } = useForm({
-    resolver: zodResolver(schema),
-    values: {
-      email_notifications: settings?.email_notifications || false,
-      push_notifications: settings?.push_notifications || false,
-      appointment_reminders: settings?.appointment_reminders || false,
-      schedule_updates: settings?.schedule_updates || false,
-      chat_messages: settings?.chat_messages || false,
-      system_alerts: settings?.system_alerts || false,
-    },
+export default function NotificationSettingsPage() {
+  const { data: notificationSettings, isLoading } = useNotificationSettings();
+  const updateMutation = useUpdateNotificationSettings();
+
+  const [settings, setSettings] = useState({
+    email_notifications: true,
+    push_notifications: true,
+    appointment_reminders: true,
+    schedule_updates: true,
+    chat_messages: true,
+    system_alerts: true,
   });
+  const [saved, setSaved] = useState(false);
 
-  const onSubmit = (data: any) => {
-    updateSettings.mutate(data);
+  useEffect(() => {
+    if (notificationSettings) {
+      setSettings(notificationSettings);
+    }
+  }, [notificationSettings]);
+
+  const handleToggle = async (key: keyof typeof settings) => {
+    const newSettings = { ...settings, [key]: !settings[key] };
+    setSettings(newSettings);
+
+    try {
+      await updateMutation.mutateAsync({ [key]: newSettings[key] });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch (err) {
+      // Revert on error
+      setSettings(settings);
+      console.error('Failed to update notification settings:', err);
+    }
   };
 
   if (isLoading) {
-    return <Loader2 className="w-8 h-8 animate-spin text-violet-600" />;
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="w-8 h-8 animate-spin text-violet-600" />
+      </div>
+    );
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
-      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-        Notifications
-      </h3>
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        <div className="flex items-center">
-          <input
-            type="checkbox"
-            id="email_notifications"
-            {...register("email_notifications")}
-            className="h-4 w-4 text-violet-600 border-gray-300 rounded"
-          />
-          <label
-            htmlFor="email_notifications"
-            className="ml-2 block text-sm text-gray-900 dark:text-gray-300"
+    <div className="space-y-6 max-w-2xl">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Link
+            href="/settings"
+            className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
           >
-            Email Notifications
-          </label>
+            <ChevronLeft className="w-5 h-5" />
+          </Link>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Notifications</h1>
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              Configure how you receive notifications
+            </p>
+          </div>
         </div>
-        <div className="flex items-center">
-          <input
-            type="checkbox"
-            id="push_notifications"
-            {...register("push_notifications")}
-            className="h-4 w-4 text-violet-600 border-gray-300 rounded"
-          />
-          <label
-            htmlFor="push_notifications"
-            className="ml-2 block text-sm text-gray-900 dark:text-gray-300"
-          >
-            Push Notifications
-          </label>
+        {saved && (
+          <span className="flex items-center gap-1 text-sm text-green-600 dark:text-green-400">
+            <Check className="w-4 h-4" />
+            Saved
+          </span>
+        )}
+      </div>
+
+      {/* General Notifications */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
+          Notification Channels
+        </h2>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+          Choose how you want to receive notifications
+        </p>
+
+        <div className="space-y-4">
+          <div className="flex items-center justify-between py-3 border-b border-gray-100 dark:border-gray-700">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                <Mail className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+              </div>
+              <div>
+                <p className="font-medium text-gray-900 dark:text-white">Email Notifications</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Receive updates via email
+                </p>
+              </div>
+            </div>
+            <ToggleSwitch
+              enabled={settings.email_notifications}
+              onChange={() => handleToggle('email_notifications')}
+              disabled={updateMutation.isPending}
+            />
+          </div>
+
+          <div className="flex items-center justify-between py-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                <Smartphone className="w-5 h-5 text-green-600 dark:text-green-400" />
+              </div>
+              <div>
+                <p className="font-medium text-gray-900 dark:text-white">Push Notifications</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Receive push notifications on mobile
+                </p>
+              </div>
+            </div>
+            <ToggleSwitch
+              enabled={settings.push_notifications}
+              onChange={() => handleToggle('push_notifications')}
+              disabled={updateMutation.isPending}
+            />
+          </div>
         </div>
-        <div className="flex items-center">
-          <input
-            type="checkbox"
-            id="appointment_reminders"
-            {...register("appointment_reminders")}
-            className="h-4 w-4 text-violet-600 border-gray-300 rounded"
-          />
-          <label
-            htmlFor="appointment_reminders"
-            className="ml-2 block text-sm text-gray-900 dark:text-gray-300"
-          >
-            Appointment Reminders
-          </label>
+      </div>
+
+      {/* Notification Types */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
+          Notification Types
+        </h2>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+          Choose which notifications you want to receive
+        </p>
+
+        <div className="space-y-4">
+          <div className="flex items-center justify-between py-3 border-b border-gray-100 dark:border-gray-700">
+            <div>
+              <p className="font-medium text-gray-900 dark:text-white">Appointment Reminders</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Get reminded about upcoming appointments
+              </p>
+            </div>
+            <ToggleSwitch
+              enabled={settings.appointment_reminders}
+              onChange={() => handleToggle('appointment_reminders')}
+              disabled={updateMutation.isPending}
+            />
+          </div>
+
+          <div className="flex items-center justify-between py-3 border-b border-gray-100 dark:border-gray-700">
+            <div>
+              <p className="font-medium text-gray-900 dark:text-white">Schedule Updates</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Notifications when your schedule changes
+              </p>
+            </div>
+            <ToggleSwitch
+              enabled={settings.schedule_updates}
+              onChange={() => handleToggle('schedule_updates')}
+              disabled={updateMutation.isPending}
+            />
+          </div>
+
+          <div className="flex items-center justify-between py-3 border-b border-gray-100 dark:border-gray-700">
+            <div>
+              <p className="font-medium text-gray-900 dark:text-white">Chat Messages</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Get notified when you receive new messages
+              </p>
+            </div>
+            <ToggleSwitch
+              enabled={settings.chat_messages}
+              onChange={() => handleToggle('chat_messages')}
+              disabled={updateMutation.isPending}
+            />
+          </div>
+
+          <div className="flex items-center justify-between py-3">
+            <div>
+              <p className="font-medium text-gray-900 dark:text-white">System Alerts</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Important system and security notifications
+              </p>
+            </div>
+            <ToggleSwitch
+              enabled={settings.system_alerts}
+              onChange={() => handleToggle('system_alerts')}
+              disabled={updateMutation.isPending}
+            />
+          </div>
         </div>
-        <div className="flex items-center">
-          <input
-            type="checkbox"
-            id="schedule_updates"
-            {...register("schedule_updates")}
-            className="h-4 w-4 text-violet-600 border-gray-300 rounded"
-          />
-          <label
-            htmlFor="schedule_updates"
-            className="ml-2 block text-sm text-gray-900 dark:text-gray-300"
-          >
-            Schedule Updates
-          </label>
+      </div>
+
+      {/* Info */}
+      <div className="bg-violet-50 dark:bg-violet-900/20 border border-violet-200 dark:border-violet-800 rounded-xl p-4">
+        <div className="flex gap-3">
+          <Bell className="w-5 h-5 text-violet-600 dark:text-violet-400 shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-medium text-violet-800 dark:text-violet-300">
+              Notification Preferences
+            </p>
+            <p className="text-sm text-violet-700 dark:text-violet-400 mt-1">
+              Changes are saved automatically. Some notifications like security alerts cannot be
+              disabled for your protection.
+            </p>
+          </div>
         </div>
-        <div className="flex items-center">
-          <input
-            type="checkbox"
-            id="chat_messages"
-            {...register("chat_messages")}
-            className="h-4 w-4 text-violet-600 border-gray-300 rounded"
-          />
-          <label
-            htmlFor="chat_messages"
-            className="ml-2 block text-sm text-gray-900 dark:text-gray-300"
-          >
-            Chat Messages
-          </label>
-        </div>
-        <div className="flex items-center">
-          <input
-            type="checkbox"
-            id="system_alerts"
-            {...register("system_alerts")}
-            className="h-4 w-4 text-violet-600 border-gray-300 rounded"
-          />
-          <label
-            htmlFor="system_alerts"
-            className="ml-2 block text-sm text-gray-900 dark:text-gray-300"
-          >
-            System Alerts
-          </label>
-        </div>
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="px-4 py-2 text-sm font-medium text-white bg-violet-600 border border-transparent rounded-md shadow-sm hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-violet-500"
-        >
-          {isSubmitting ? "Saving..." : "Save"}
-        </button>
-      </form>
+      </div>
     </div>
   );
 }

@@ -48,7 +48,6 @@ import NEMTBrokerModal from "@/components/features/clients/NEMTBrokerModal";
 import TransportationRequestsSection from "@/components/features/clients/TransportationRequestsSection";
 import DSHSReportsSection from "@/components/features/clients/DSHSReportsSection";
 import UnitTransactionsSection from "@/components/features/clients/UnitTransactionsSection";
-import { DocumentsSection } from "@/components/features/clients/DocumentsSection";
 
 const statusColors: Record<AppointmentStatus, string> = {
   pending:
@@ -134,7 +133,6 @@ export default function ClientProfilePage() {
   const params = useParams();
   const clientId = Number(params.id);
 
-  const [activeTab, setActiveTab] = useState("overview");
   const [showClientModal, setShowClientModal] = useState(false);
   const [showBrokerModal, setShowBrokerModal] = useState(false);
   const [showUnitsHistory, setShowUnitsHistory] = useState<
@@ -380,826 +378,751 @@ export default function ClientProfilePage() {
         </button>
       </div>
 
-      <div className="border-b border-gray-200 dark:border-gray-700">
-        <nav className="-mb-px flex space-x-8" aria-label="Tabs">
-          <button
-            onClick={() => setActiveTab("overview")}
-            className={cn(
-              "whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm",
-              activeTab === "overview"
-                ? "border-violet-500 text-violet-600"
-                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-            )}
-          >
-            Overview
-          </button>
-          <button
-            onClick={() => setActiveTab("appointments")}
-            className={cn(
-              "whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm",
-              activeTab === "appointments"
-                ? "border-violet-500 text-violet-600"
-                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-            )}
-          >
-            Appointments
-          </button>
-          <button
-            onClick={() => setActiveTab("units_billing")}
-            className={cn(
-              "whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm",
-              activeTab === "units_billing"
-                ? "border-violet-500 text-violet-600"
-                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-            )}
-          >
-            Units & Billing
-          </button>
-          <button
-            onClick={() => setActiveTab("documents")}
-            className={cn(
-              "whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm",
-              activeTab === "documents"
-                ? "border-violet-500 text-violet-600"
-                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-            )}
-          >
-            Documents
-          </button>
-        </nav>
-      </div>
-
       {/* Main Content Grid - 3 Column Layout */}
-      {activeTab === "overview" && (
-        <div className="grid grid-cols-12 gap-6">
-          {/* Left Column - Client Info & Preferences */}
-          <div className="col-span-12 lg:col-span-3 space-y-6">
-            {/* Personal Information Card */}
-            <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-800">
-              <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800">
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                  Personal Information
-                </h2>
-              </div>
-              <div className="px-6 py-4">
-                <dl className="space-y-4">
-                  <div className="flex justify-between">
-                    <dt className="font-medium text-gray-400 dark:text-gray-500">
-                      Date of Birth
-                    </dt>
-                    <dd className="text-gray-900 dark:text-gray-100">
-                      {formatDateOfBirth(client.date_of_birth)}
-                    </dd>
-                  </div>
-                  <div className="flex justify-between">
-                    <dt className="font-medium text-gray-400 dark:text-gray-500">
-                      Phone
-                    </dt>
-                    <dd className="text-gray-900 dark:text-gray-100">
-                      {client.user?.phone || "Not set"}
-                    </dd>
-                  </div>
-                  {client.user?.email &&
-                    !client.user.email.endsWith("@empowerhub.io") && (
-                      <div className="flex justify-between">
-                        <dt className="font-medium text-gray-400 dark:text-gray-500">
-                          Email
-                        </dt>
-                        <dd className="text-gray-900 dark:text-gray-100 text-right truncate max-w-[150px]">
-                          {client.user.email}
-                        </dd>
-                      </div>
-                    )}
-                  <div className="flex justify-between">
-                    <dt className="font-medium text-gray-400 dark:text-gray-500">
-                      Address
-                    </dt>
-                    <dd className="text-gray-900 dark:text-gray-100 text-right">
-                      {[
-                        client.address?.street,
-                        client.address?.city,
-                        client.address?.state,
-                        client.address?.zip,
-                      ]
-                        .filter(Boolean)
-                        .join(", ") || "Not set"}
-                    </dd>
-                  </div>
-                  <div className="flex justify-between">
-                    <dt className="font-medium text-gray-400 dark:text-gray-500">
-                      Case Manager
-                    </dt>
-                    <dd>
-                      {client.case_manager ? (
-                        <Link
-                          href={`/case-managers/${client.case_manager.id}`}
-                          className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-violet-100 dark:bg-violet-900/50 text-violet-800 dark:text-violet-300 hover:bg-violet-200 dark:hover:bg-violet-800"
-                        >
-                          {client.case_manager.user?.name ||
-                            client.case_manager.name ||
-                            "Unknown"}
-                        </Link>
-                      ) : (
-                        <span className="text-gray-500 dark:text-gray-400">
-                          Not Assigned
-                        </span>
-                      )}
-                    </dd>
-                  </div>
-                  {client.facility && (
+      <div className="grid grid-cols-12 gap-6">
+        {/* Left Column - Client Info & Preferences */}
+        <div className="col-span-12 lg:col-span-3 space-y-6">
+          {/* Personal Information Card */}
+          <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-800">
+            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                Personal Information
+              </h2>
+            </div>
+            <div className="px-6 py-4">
+              <dl className="space-y-4">
+                <div className="flex justify-between">
+                  <dt className="font-medium text-gray-400 dark:text-gray-500">
+                    Date of Birth
+                  </dt>
+                  <dd className="text-gray-900 dark:text-gray-100">
+                    {formatDateOfBirth(client.date_of_birth)}
+                  </dd>
+                </div>
+                <div className="flex justify-between">
+                  <dt className="font-medium text-gray-400 dark:text-gray-500">
+                    Phone
+                  </dt>
+                  <dd className="text-gray-900 dark:text-gray-100">
+                    {client.user?.phone || "Not set"}
+                  </dd>
+                </div>
+                {client.user?.email &&
+                  !client.user.email.endsWith("@empowerhub.io") && (
                     <div className="flex justify-between">
                       <dt className="font-medium text-gray-400 dark:text-gray-500">
-                        Facility
+                        Email
                       </dt>
-                      <dd>
-                        <Link
-                          href={`/facilities/${client.facility.id}`}
-                          className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-violet-100 dark:bg-violet-900/50 text-violet-800 dark:text-violet-300 hover:bg-violet-200 dark:hover:bg-violet-800"
-                        >
-                          {client.facility.name}
-                        </Link>
+                      <dd className="text-gray-900 dark:text-gray-100 text-right truncate max-w-[150px]">
+                        {client.user.email}
                       </dd>
                     </div>
                   )}
+                <div className="flex justify-between">
+                  <dt className="font-medium text-gray-400 dark:text-gray-500">
+                    Address
+                  </dt>
+                  <dd className="text-gray-900 dark:text-gray-100 text-right">
+                    {[
+                      client.address?.street,
+                      client.address?.city,
+                      client.address?.state,
+                      client.address?.zip,
+                    ]
+                      .filter(Boolean)
+                      .join(", ") || "Not set"}
+                  </dd>
+                </div>
+                <div className="flex justify-between">
+                  <dt className="font-medium text-gray-400 dark:text-gray-500">
+                    Case Manager
+                  </dt>
+                  <dd>
+                    {client.case_manager ? (
+                      <Link
+                        href={`/case-managers/${client.case_manager.id}`}
+                        className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-violet-100 dark:bg-violet-900/50 text-violet-800 dark:text-violet-300 hover:bg-violet-200 dark:hover:bg-violet-800"
+                      >
+                        {client.case_manager.user?.name ||
+                          client.case_manager.name ||
+                          "Unknown"}
+                      </Link>
+                    ) : (
+                      <span className="text-gray-500 dark:text-gray-400">
+                        Not Assigned
+                      </span>
+                    )}
+                  </dd>
+                </div>
+                {client.facility && (
                   <div className="flex justify-between">
                     <dt className="font-medium text-gray-400 dark:text-gray-500">
-                      Status
+                      Facility
                     </dt>
                     <dd>
-                      {(() => {
-                        const status = client.user?.status;
-                        const statusNum =
-                          typeof status === "number"
-                            ? status
-                            : status === "active"
-                            ? 1
-                            : 0;
-                        return (
-                          <span
-                            className={cn(
-                              "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium",
-                              userStatusColors[statusNum] || userStatusColors[0]
-                            )}
-                          >
-                            {userStatusLabels[statusNum] || "Unknown"}
-                          </span>
-                        );
-                      })()}
+                      <Link
+                        href={`/facilities/${client.facility.id}`}
+                        className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-violet-100 dark:bg-violet-900/50 text-violet-800 dark:text-violet-300 hover:bg-violet-200 dark:hover:bg-violet-800"
+                      >
+                        {client.facility.name}
+                      </Link>
                     </dd>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <dt className="font-medium text-gray-400 dark:text-gray-500">
-                      Enrolled
-                    </dt>
-                    <dd className="flex flex-col items-end">
-                      <span className="text-gray-900 text-sm dark:text-gray-100 font-medium">
-                        {formatEnrolledDate(client.created_at)}
-                      </span>
-                      <span className="text-gray-500 text-xs dark:text-gray-400">
-                        ({getTimeAgo(client.created_at)})
-                      </span>
-                    </dd>
-                  </div>
-                </dl>
+                )}
+                <div className="flex justify-between">
+                  <dt className="font-medium text-gray-400 dark:text-gray-500">
+                    Status
+                  </dt>
+                  <dd>
+                    {(() => {
+                      const status = client.user?.status;
+                      const statusNum =
+                        typeof status === "number"
+                          ? status
+                          : status === "active"
+                          ? 1
+                          : 0;
+                      return (
+                        <span
+                          className={cn(
+                            "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium",
+                            userStatusColors[statusNum] || userStatusColors[0]
+                          )}
+                        >
+                          {userStatusLabels[statusNum] || "Unknown"}
+                        </span>
+                      );
+                    })()}
+                  </dd>
+                </div>
+                <div className="flex justify-between items-center">
+                  <dt className="font-medium text-gray-400 dark:text-gray-500">
+                    Enrolled
+                  </dt>
+                  <dd className="flex flex-col items-end">
+                    <span className="text-gray-900 text-sm dark:text-gray-100 font-medium">
+                      {formatEnrolledDate(client.created_at)}
+                    </span>
+                    <span className="text-gray-500 text-xs dark:text-gray-400">
+                      ({getTimeAgo(client.created_at)})
+                    </span>
+                  </dd>
+                </div>
+              </dl>
+            </div>
+          </div>
+
+          {/* Client Preferences Card */}
+          <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-800">
+            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
+                  Preferences
+                </h3>
+                <button
+                  disabled={isInactive}
+                  className={cn(
+                    "inline-flex items-center px-3 py-1 text-white text-xs font-medium rounded-lg transition-colors",
+                    isInactive
+                      ? "bg-gray-400 cursor-not-allowed"
+                      : "bg-violet-600 hover:bg-violet-700"
+                  )}
+                >
+                  <Edit className="w-3 h-3 mr-1" />
+                  Edit
+                </button>
               </div>
             </div>
-
-            {/* Client Preferences Card */}
-            <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-800">
-              <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800">
-                <div className="flex justify-between items-center">
-                  <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
-                    Preferences
-                  </h3>
-                  <button
-                    disabled={isInactive}
-                    className={cn(
-                      "inline-flex items-center px-3 py-1 text-white text-xs font-medium rounded-lg transition-colors",
-                      isInactive
-                        ? "bg-gray-400 cursor-not-allowed"
-                        : "bg-violet-600 hover:bg-violet-700"
-                    )}
-                  >
-                    <Edit className="w-3 h-3 mr-1" />
-                    Edit
-                  </button>
-                </div>
-              </div>
-              <div className="p-4">
-                <div className="space-y-4">
-                  {/* Schedule */}
-                  <div className="flex items-start gap-3">
-                    <Calendar className="w-5 h-5 mt-0.5 text-blue-500 shrink-0" />
-                    <div className="flex-1">
-                      {client.preferences?.schedule_preferences?.in_home && (
-                        <div className="mb-3">
-                          <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">
-                            Home Service
-                          </p>
-                          <div className="flex flex-wrap gap-1.5">
-                            {client.preferences.schedule_preferences.in_home.days?.map(
-                              (day: string) => (
-                                <span
-                                  key={day}
-                                  className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 capitalize"
-                                >
-                                  {day.slice(0, 3)}
-                                </span>
-                              )
-                            )}
-                          </div>
-                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                            {
-                              client.preferences.schedule_preferences.in_home
-                                .times?.start_time
-                            }{" "}
-                            -{" "}
-                            {
-                              client.preferences.schedule_preferences.in_home
-                                .times?.end_time
-                            }
-                          </p>
-                        </div>
-                      )}
-
-                      {client.preferences?.schedule_preferences
-                        ?.transportation && (
-                        <div>
-                          <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">
-                            Transportation
-                          </p>
-                          <div className="flex flex-wrap gap-1.5">
-                            {client.preferences.schedule_preferences.transportation.days?.map(
-                              (day: string) => (
-                                <span
-                                  key={day}
-                                  className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 capitalize"
-                                >
-                                  {day.slice(0, 3)}
-                                </span>
-                              )
-                            )}
-                          </div>
-                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                            {
-                              client.preferences.schedule_preferences
-                                .transportation.times?.start_time
-                            }{" "}
-                            -{" "}
-                            {
-                              client.preferences.schedule_preferences
-                                .transportation.times?.end_time
-                            }
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Languages and Gender */}
-                  <div className="flex gap-3">
-                    <div className="flex items-start gap-3 flex-1">
-                      <Languages className="w-5 h-5 mt-0.5 text-violet-500 shrink-0" />
-                      <div className="flex-1">
+            <div className="p-4">
+              <div className="space-y-4">
+                {/* Schedule */}
+                <div className="flex items-start gap-3">
+                  <Calendar className="w-5 h-5 mt-0.5 text-blue-500 shrink-0" />
+                  <div className="flex-1">
+                    {client.preferences?.schedule_preferences?.in_home && (
+                      <div className="mb-3">
+                        <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">
+                          Home Service
+                        </p>
                         <div className="flex flex-wrap gap-1.5">
-                          {client.preferences?.general_preferences?.languages_display?.map(
-                            (lang: string, index: number) => (
+                          {client.preferences.schedule_preferences.in_home.days?.map(
+                            (day: string) => (
                               <span
-                                key={index}
-                                className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-violet-50 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300"
+                                key={day}
+                                className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 capitalize"
                               >
-                                {lang}
+                                {day.slice(0, 3)}
                               </span>
                             )
                           )}
                         </div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                          {
+                            client.preferences.schedule_preferences.in_home
+                              .times?.start_time
+                          }{" "}
+                          -{" "}
+                          {
+                            client.preferences.schedule_preferences.in_home
+                              .times?.end_time
+                          }
+                        </p>
                       </div>
-                    </div>
+                    )}
 
-                    <div className="flex items-start gap-3">
-                      <User className="w-5 h-5 mt-0.5 text-gray-400 shrink-0" />
-                      <span className="text-sm font-medium capitalize text-gray-700 dark:text-gray-300">
-                        {client.preferences?.general_preferences?.coach_gender ||
-                          "Any"}
-                      </span>
+                    {client.preferences?.schedule_preferences
+                      ?.transportation && (
+                      <div>
+                        <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">
+                          Transportation
+                        </p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {client.preferences.schedule_preferences.transportation.days?.map(
+                            (day: string) => (
+                              <span
+                                key={day}
+                                className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 capitalize"
+                              >
+                                {day.slice(0, 3)}
+                              </span>
+                            )
+                          )}
+                        </div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                          {
+                            client.preferences.schedule_preferences
+                              .transportation.times?.start_time
+                          }{" "}
+                          -{" "}
+                          {
+                            client.preferences.schedule_preferences
+                              .transportation.times?.end_time
+                          }
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Languages and Gender */}
+                <div className="flex gap-3">
+                  <div className="flex items-start gap-3 flex-1">
+                    <Languages className="w-5 h-5 mt-0.5 text-violet-500 shrink-0" />
+                    <div className="flex-1">
+                      <div className="flex flex-wrap gap-1.5">
+                        {client.preferences?.general_preferences?.languages_display?.map(
+                          (lang: string, index: number) => (
+                            <span
+                              key={index}
+                              className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-violet-50 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300"
+                            >
+                              {lang}
+                            </span>
+                          )
+                        )}
+                      </div>
                     </div>
                   </div>
 
-                  {/* Notes */}
-                  {client.preferences?.notes && (
-                    <div className="flex items-start gap-3">
-                      <FileText className="w-5 h-5 mt-0.5 text-gray-400 shrink-0" />
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        {client.preferences.notes}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* No Preferences */}
-                  {(!client.preferences ||
-                    Object.keys(client.preferences).length === 0) && (
-                    <div className="flex items-center justify-center py-3">
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
-                        No preferences set
-                      </p>
-                    </div>
-                  )}
+                  <div className="flex items-start gap-3">
+                    <User className="w-5 h-5 mt-0.5 text-gray-400 shrink-0" />
+                    <span className="text-sm font-medium capitalize text-gray-700 dark:text-gray-300">
+                      {client.preferences?.general_preferences?.coach_gender ||
+                        "Any"}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            </div>
-          </div>
 
-          {/* Middle Column - Services, Units & Team */}
-          <div className="col-span-12 lg:col-span-6 space-y-6">
-            {/* Service Overview Card */}
-            <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-800">
-              <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800">
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                  Service Overview
-                </h2>
-              </div>
-              <div className="px-6 py-4">
-                <div className="space-y-4">
-                  {(() => {
-                    // Deduplicate specialities - keep only active (pivot.status=1) when duplicates exist
-                    const uniqueSpecialities =
-                      client.specialities?.filter((s, index, arr) => {
-                        const duplicates = arr.filter((sp) => sp.id === s.id);
-                        if (duplicates.length === 1) return true;
-                        // For duplicates, only keep the one with active status (pivot.status=1)
-                        return s.pivot?.status === 1;
-                      }) || [];
+                {/* Notes */}
+                {client.preferences?.notes && (
+                  <div className="flex items-start gap-3">
+                    <FileText className="w-5 h-5 mt-0.5 text-gray-400 shrink-0" />
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      {client.preferences.notes}
+                    </p>
+                  </div>
+                )}
 
-                    if (uniqueSpecialities.length === 0) {
-                      return (
-                        <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
-                          No services assigned
-                        </p>
-                      );
-                    }
-
-                    return uniqueSpecialities.map((speciality) => {
-                      // Get balance from unit_balances
-                      const balanceRecord = client.unit_balances?.find(
-                        (b) => b.speciality_id === speciality.id
-                      );
-                      const balance = balanceRecord?.balance ?? 0;
-
-                      // Get unit allocation from client.units
-                      const unitAllocation = client.units?.find(
-                        (u) => u.speciality_id === speciality.id && u.status === 1
-                      );
-                      const totalUnits = unitAllocation?.units ?? 0;
-
-                      return (
-                        <div key={`${speciality.id}-${speciality.pivot?.status}`}>
-                          <div className="flex items-center justify-between mb-2">
-                            <div>
-                              <Link
-                                href={`/services/specialities/${speciality.id}`}
-                                className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-violet-100 dark:bg-violet-900/50 text-violet-800 dark:text-violet-300 hover:bg-violet-200 dark:hover:bg-violet-800"
-                              >
-                                {speciality.name}
-                              </Link>
-                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                {balance} / {totalUnits} units remaining this
-                                month
-                              </p>
-                            </div>
-                            <span
-                              className={cn(
-                                "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium",
-                                unitAllocation?.status === 1 && balance >= 0
-                                  ? "bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300"
-                                  : unitAllocation?.status === 1 && balance < 0
-                                  ? "bg-yellow-100 dark:bg-yellow-900/50 text-yellow-800 dark:text-yellow-300"
-                                  : "bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-300"
-                              )}
-                            >
-                              {unitAllocation?.status === 1
-                                ? balance >= 0
-                                  ? "Active"
-                                  : "Over Limit"
-                                : "Inactive"}
-                            </span>
-                          </div>
-                          <div className="flex items-center text-xs text-gray-500 dark:text-gray-400 mt-1">
-                            <span>Authorization ID: </span>
-                            <span className="ml-1 font-medium dark:text-gray-300">
-                              {unitAllocation?.authorization_id || "N/A"}
-                            </span>
-                            <span className="mx-2">•</span>
-                            <span>Expires: </span>
-                            <span className="ml-1 font-medium dark:text-gray-300">
-                              {unitAllocation?.end_date
-                                ? new Date(
-                                    unitAllocation.end_date
-                                  ).toLocaleDateString()
-                                : "N/A"}
-                            </span>
-                          </div>
-                        </div>
-                      );
-                    });
-                  })()}
-                </div>
-              </div>
-            </div>
-
-            {/* Units Overview Card */}
-            <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-800">
-              <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800">
-                <div className="flex justify-between items-center">
-                  <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                    Units Overview
-                  </h2>
-                  <button
-                    disabled={isInactive}
-                    className={cn(
-                      "inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-white transition-colors",
-                      isInactive
-                        ? "bg-gray-400 cursor-not-allowed"
-                        : "bg-violet-600 hover:bg-violet-700 dark:bg-violet-500 dark:hover:bg-violet-600"
-                    )}
-                  >
-                    <RefreshCw className="w-4 h-4 mr-1.5" />
-                    Allocate Units
-                  </button>
-                </div>
-              </div>
-              <div className="px-6 py-4">
-                <div className="space-y-6">
-                  {(() => {
-                    // Deduplicate specialities - keep only active (pivot.status=1) when duplicates exist
-                    const uniqueSpecialities =
-                      client.specialities?.filter((s, index, arr) => {
-                        const duplicates = arr.filter((sp) => sp.id === s.id);
-                        if (duplicates.length === 1) return true;
-                        // For duplicates, only keep the one with active status
-                        return s.pivot?.status === 1;
-                      }) || [];
-
-                    if (uniqueSpecialities.length === 0) {
-                      return (
-                        <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                          <CreditCard className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                          <p>No services assigned</p>
-                        </div>
-                      );
-                    }
-
-                    return uniqueSpecialities.map((speciality) => {
-                      // Get balance from unit_balances
-                      const balanceRecord = client.unit_balances?.find(
-                        (b) => b.speciality_id === speciality.id
-                      );
-                      const balance = balanceRecord?.balance ?? 0;
-
-                      // Get unit allocation from client.units
-                      const unitAllocation = client.units?.find(
-                        (u) => u.speciality_id === speciality.id && u.status === 1
-                      );
-                      const totalUnits = unitAllocation?.units ?? 0;
-                      const usedUnits = totalUnits - balance;
-                      const percentage =
-                        totalUnits > 0
-                          ? Math.min(
-                              100,
-                              Math.max(0, (usedUnits / totalUnits) * 100)
-                            )
-                          : 0;
-                      const overLimit = balance < 0;
-
-                      return (
-                        <div key={speciality.id}>
-                          <div className="flex justify-between items-center mb-2">
-                            <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                              {speciality.name}
-                            </h3>
-                            <div className="text-sm text-gray-500 dark:text-gray-400">
-                              {balance} / {totalUnits} units remaining this month
-                            </div>
-                          </div>
-
-                          {/* Progress Bar */}
-                          <div className="relative pt-1">
-                            <div className="overflow-hidden h-2 mb-4 text-xs flex rounded bg-violet-100 dark:bg-violet-900/30">
-                              <div
-                                className={cn(
-                                  "shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center transition-all duration-500",
-                                  overLimit
-                                    ? "bg-yellow-500 dark:bg-yellow-400"
-                                    : "bg-violet-500 dark:bg-violet-400"
-                                )}
-                                style={{ width: `${percentage}%` }}
-                              />
-                              {overLimit && (
-                                <div
-                                  className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-red-500 dark:bg-red-400 transition-all duration-500"
-                                  style={{
-                                    width: `${Math.min(
-                                      100,
-                                      (Math.abs(balance) / totalUnits) * 100
-                                    )}%`,
-                                  }}
-                                />
-                              )}
-                            </div>
-
-                            {/* Authorization Info */}
-                            <div className="flex justify-between text-xs text-gray-600 dark:text-gray-400">
-                              <span>
-                                Authorization ID:{" "}
-                                <span className="font-medium dark:text-gray-300">
-                                  {unitAllocation?.authorization_id || "N/A"}
-                                </span>
-                              </span>
-                              <span>
-                                Expires:{" "}
-                                <span className="font-medium dark:text-gray-300">
-                                  {unitAllocation?.end_date
-                                    ? new Date(
-                                        unitAllocation.end_date
-                                      ).toLocaleDateString()
-                                    : "N/A"}
-                                </span>
-                              </span>
-                            </div>
-
-                            {/* View Balance History */}
-                            <div className="mt-4">
-                              <button
-                                onClick={() =>
-                                  setShowUnitsHistory((prev) => ({
-                                    ...prev,
-                                    [speciality.id]: !prev[speciality.id],
-                                  }))
-                                }
-                                className="text-xs flex items-center text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300"
-                              >
-                                <ChevronDown
-                                  className={cn(
-                                    "w-4 h-4 mr-1 transition-transform",
-                                    showUnitsHistory[speciality.id] &&
-                                      "rotate-180"
-                                  )}
-                                />
-                                View Balance History
-                              </button>
-
-                              {showUnitsHistory[speciality.id] && (
-                                <div className="mt-2 space-y-2">
-                                  {client.unit_balances_history?.filter(
-                                    (h) => h.speciality_id === speciality.id
-                                  ).length ? (
-                                    <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-                                      <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                                        <thead className="bg-gray-50 dark:bg-gray-800">
-                                          <tr>
-                                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">
-                                              Month
-                                            </th>
-                                            <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400">
-                                              Allocated
-                                            </th>
-                                            <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400">
-                                              Used
-                                            </th>
-                                            <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400">
-                                              Balance
-                                            </th>
-                                          </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                                          {client.unit_balances_history
-                                            ?.filter(
-                                              (h) =>
-                                                h.speciality_id === speciality.id
-                                            )
-                                            .slice(0, 6)
-                                            .map((history) => (
-                                              <tr
-                                                key={history.id}
-                                                className="text-xs"
-                                              >
-                                                <td className="px-3 py-2 text-gray-900 dark:text-gray-100">
-                                                  {new Date(
-                                                    history.month_year
-                                                  ).toLocaleDateString("en-US", {
-                                                    month: "short",
-                                                    year: "numeric",
-                                                  })}
-                                                </td>
-                                                <td className="px-3 py-2 text-right text-gray-600 dark:text-gray-400">
-                                                  {history.allocated_units}
-                                                </td>
-                                                <td className="px-3 py-2 text-right text-gray-600 dark:text-gray-400">
-                                                  {history.used_units}
-                                                </td>
-                                                <td
-                                                  className={cn(
-                                                    "px-3 py-2 text-right font-medium",
-                                                    history.balance < 0
-                                                      ? "text-red-600 dark:text-red-400"
-                                                      : "text-gray-900 dark:text-gray-100"
-                                                  )}
-                                                >
-                                                  {history.balance}
-                                                </td>
-                                              </tr>
-                                            ))}
-                                        </tbody>
-                                      </table>
-                                    </div>
-                                  ) : (
-                                    <p className="text-xs text-gray-500 dark:text-gray-400 italic text-center py-2">
-                                      No balance history available
-                                    </p>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    });
-                  })()}
-                </div>
-              </div>
-            </div>
-
-            {/* Care Team Card */}
-            <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                  Care Team
-                </h2>
-                <Link
-                  href="/team"
-                  className="text-sm text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300"
-                >
-                  View All
-                </Link>
-              </div>
-
-              <div className="space-y-3">
-                {client.recent_team_members &&
-                client.recent_team_members.length > 0 ? (
-                  client.recent_team_members
-                    .slice(0, 4)
-                    .map(
-                      (member: {
-                        id: number;
-                        name: string;
-                        sessions_count?: number;
-                      }) => (
-                        <div
-                          key={member.id}
-                          className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                        >
-                          <div className="flex-shrink-0">
-                            <div className="h-10 w-10 rounded-full bg-violet-100 dark:bg-violet-900/50 flex items-center justify-center">
-                              <span className="text-sm font-medium text-violet-700 dark:text-violet-300">
-                                {member.name
-                                  .split(" ")
-                                  .map((n) => n[0])
-                                  .join("")
-                                  .toUpperCase()
-                                  .slice(0, 2)}
-                              </span>
-                            </div>
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <Link
-                              href={`/team/${member.id}`}
-                              className="hover:text-violet-600 dark:hover:text-violet-400"
-                            >
-                              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                                {member.name}
-                              </p>
-                              <p className="text-xs text-gray-500 dark:text-gray-400">
-                                {member.sessions_count || 0} session
-                                {member.sessions_count !== 1 ? "s" : ""}
-                              </p>
-                            </Link>
-                          </div>
-                          <div className="flex-shrink-0">
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300">
-                              Active
-                            </span>
-                          </div>
-                        </div>
-                      )
-                    )
-                ) : (
-                  <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
-                    No team members assigned
-                  </p>
+                {/* No Preferences */}
+                {(!client.preferences ||
+                  Object.keys(client.preferences).length === 0) && (
+                  <div className="flex items-center justify-center py-3">
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      No preferences set
+                    </p>
+                  </div>
                 )}
               </div>
             </div>
           </div>
+        </div>
 
-          {/* Right Column - Sessions & Transactions */}
-          <div className="col-span-12 lg:col-span-3 space-y-6">
-            {/* Upcoming Sessions Card */}
-            <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                  Upcoming Sessions
-                </h2>
-                <Link
-                  href={`/appointments?client_id=${client.id}`}
-                  className="text-sm text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300"
-                >
-                  View All
-                </Link>
-              </div>
+        {/* Middle Column - Services, Units & Team */}
+        <div className="col-span-12 lg:col-span-6 space-y-6">
+          {/* Service Overview Card */}
+          <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-800">
+            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                Service Overview
+              </h2>
+            </div>
+            <div className="px-6 py-4">
+              <div className="space-y-4">
+                {(() => {
+                  // Deduplicate specialities - keep only active (pivot.status=1) when duplicates exist
+                  const uniqueSpecialities =
+                    client.specialities?.filter((s, index, arr) => {
+                      const duplicates = arr.filter((sp) => sp.id === s.id);
+                      if (duplicates.length === 1) return true;
+                      // For duplicates, only keep the one with active status (pivot.status=1)
+                      return s.pivot?.status === 1;
+                    }) || [];
 
-              <div className="space-y-3 max-h-[400px] overflow-y-auto">
-                {upcomingSessions.length > 0 ? (
-                  upcomingSessions.slice(0, 5).map((session) => (
-                    <Link
-                      key={session.id}
-                      href={`/appointments/${session.id}`}
-                      className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                    >
-                      <div className="flex items-center space-x-2">
-                        <div className="flex-shrink-0">
-                          <div className="w-14 h-14 rounded-lg bg-violet-100 dark:bg-violet-900/50 flex items-center text-center justify-center">
-                            <span className="text-lg font-medium opacity-75 text-violet-700 dark:text-violet-300">
-                              {new Date(session.date).toLocaleDateString(
-                                "en-US",
-                                { weekday: "short" }
-                              )}
-                              <br />
-                              <span className="text-xs opacity-60">
-                                {new Date(session.date).toLocaleDateString(
-                                  "en-US",
-                                  { month: "short", day: "numeric" }
-                                )}
-                              </span>
-                            </span>
+                  if (uniqueSpecialities.length === 0) {
+                    return (
+                      <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
+                        No services assigned
+                      </p>
+                    );
+                  }
+
+                  return uniqueSpecialities.map((speciality) => {
+                    // Get balance from unit_balances
+                    const balanceRecord = client.unit_balances?.find(
+                      (b) => b.speciality_id === speciality.id
+                    );
+                    const balance = balanceRecord?.balance ?? 0;
+
+                    // Get unit allocation from client.units
+                    const unitAllocation = client.units?.find(
+                      (u) => u.speciality_id === speciality.id && u.status === 1
+                    );
+                    const totalUnits = unitAllocation?.units ?? 0;
+
+                    return (
+                      <div key={`${speciality.id}-${speciality.pivot?.status}`}>
+                        <div className="flex items-center justify-between mb-2">
+                          <div>
+                            <Link
+                              href={`/services/specialities/${speciality.id}`}
+                              className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-violet-100 dark:bg-violet-900/50 text-violet-800 dark:text-violet-300 hover:bg-violet-200 dark:hover:bg-violet-800"
+                            >
+                              {speciality.name}
+                            </Link>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                              {balance} / {totalUnits} units remaining this
+                              month
+                            </p>
                           </div>
+                          <span
+                            className={cn(
+                              "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium",
+                              unitAllocation?.status === 1 && balance >= 0
+                                ? "bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300"
+                                : unitAllocation?.status === 1 && balance < 0
+                                ? "bg-yellow-100 dark:bg-yellow-900/50 text-yellow-800 dark:text-yellow-300"
+                                : "bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-300"
+                            )}
+                          >
+                            {unitAllocation?.status === 1
+                              ? balance >= 0
+                                ? "Active"
+                                : "Over Limit"
+                              : "Inactive"}
+                          </span>
                         </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
-                            {session.start_time} - {session.end_time}
-                          </p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                            {session.speciality?.short_name ||
-                              session.speciality?.name}{" "}
-                            with {session.team?.name || "Unassigned"}
-                          </p>
+                        <div className="flex items-center text-xs text-gray-500 dark:text-gray-400 mt-1">
+                          <span>Authorization ID: </span>
+                          <span className="ml-1 font-medium dark:text-gray-300">
+                            {unitAllocation?.authorization_id || "N/A"}
+                          </span>
+                          <span className="mx-2">•</span>
+                          <span>Expires: </span>
+                          <span className="ml-1 font-medium dark:text-gray-300">
+                            {unitAllocation?.end_date
+                              ? new Date(
+                                  unitAllocation.end_date
+                                ).toLocaleDateString()
+                              : "N/A"}
+                          </span>
                         </div>
                       </div>
-                      <span
-                        className={cn(
-                          "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize",
-                          statusColors[session.status]
-                        )}
-                      >
-                        {session.status.replace("_", " ")}
-                      </span>
-                    </Link>
-                  ))
-                ) : (
-                  <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
-                    No upcoming sessions
-                  </p>
-                )}
+                    );
+                  });
+                })()}
               </div>
             </div>
+          </div>
 
-            {/* Recent Unit Transactions Card */}
-            <UnitTransactionsSection transactions={client.unit_transactions || []} />
+          {/* Units Overview Card */}
+          <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-800">
+            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800">
+              <div className="flex justify-between items-center">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                  Units Overview
+                </h2>
+                <button
+                  disabled={isInactive}
+                  className={cn(
+                    "inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-white transition-colors",
+                    isInactive
+                      ? "bg-gray-400 cursor-not-allowed"
+                      : "bg-violet-600 hover:bg-violet-700 dark:bg-violet-500 dark:hover:bg-violet-600"
+                  )}
+                >
+                  <RefreshCw className="w-4 h-4 mr-1.5" />
+                  Allocate Units
+                </button>
+              </div>
+            </div>
+            <div className="px-6 py-4">
+              <div className="space-y-6">
+                {(() => {
+                  // Deduplicate specialities - keep only active (pivot.status=1) when duplicates exist
+                  const uniqueSpecialities =
+                    client.specialities?.filter((s, index, arr) => {
+                      const duplicates = arr.filter((sp) => sp.id === s.id);
+                      if (duplicates.length === 1) return true;
+                      // For duplicates, only keep the one with active status
+                      return s.pivot?.status === 1;
+                    }) || [];
+
+                  if (uniqueSpecialities.length === 0) {
+                    return (
+                      <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                        <CreditCard className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                        <p>No services assigned</p>
+                      </div>
+                    );
+                  }
+
+                  return uniqueSpecialities.map((speciality) => {
+                    // Get balance from unit_balances
+                    const balanceRecord = client.unit_balances?.find(
+                      (b) => b.speciality_id === speciality.id
+                    );
+                    const balance = balanceRecord?.balance ?? 0;
+
+                    // Get unit allocation from client.units
+                    const unitAllocation = client.units?.find(
+                      (u) => u.speciality_id === speciality.id && u.status === 1
+                    );
+                    const totalUnits = unitAllocation?.units ?? 0;
+                    const usedUnits = totalUnits - balance;
+                    const percentage =
+                      totalUnits > 0
+                        ? Math.min(
+                            100,
+                            Math.max(0, (usedUnits / totalUnits) * 100)
+                          )
+                        : 0;
+                    const overLimit = balance < 0;
+
+                    return (
+                      <div key={speciality.id}>
+                        <div className="flex justify-between items-center mb-2">
+                          <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                            {speciality.name}
+                          </h3>
+                          <div className="text-sm text-gray-500 dark:text-gray-400">
+                            {balance} / {totalUnits} units remaining this month
+                          </div>
+                        </div>
+
+                        {/* Progress Bar */}
+                        <div className="relative pt-1">
+                          <div className="overflow-hidden h-2 mb-4 text-xs flex rounded bg-violet-100 dark:bg-violet-900/30">
+                            <div
+                              className={cn(
+                                "shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center transition-all duration-500",
+                                overLimit
+                                  ? "bg-yellow-500 dark:bg-yellow-400"
+                                  : "bg-violet-500 dark:bg-violet-400"
+                              )}
+                              style={{ width: `${percentage}%` }}
+                            />
+                            {overLimit && (
+                              <div
+                                className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-red-500 dark:bg-red-400 transition-all duration-500"
+                                style={{
+                                  width: `${Math.min(
+                                    100,
+                                    (Math.abs(balance) / totalUnits) * 100
+                                  )}%`,
+                                }}
+                              />
+                            )}
+                          </div>
+
+                          {/* Authorization Info */}
+                          <div className="flex justify-between text-xs text-gray-600 dark:text-gray-400">
+                            <span>
+                              Authorization ID:{" "}
+                              <span className="font-medium dark:text-gray-300">
+                                {unitAllocation?.authorization_id || "N/A"}
+                              </span>
+                            </span>
+                            <span>
+                              Expires:{" "}
+                              <span className="font-medium dark:text-gray-300">
+                                {unitAllocation?.end_date
+                                  ? new Date(
+                                      unitAllocation.end_date
+                                    ).toLocaleDateString()
+                                  : "N/A"}
+                              </span>
+                            </span>
+                          </div>
+
+                          {/* View Balance History */}
+                          <div className="mt-4">
+                            <button
+                              onClick={() =>
+                                setShowUnitsHistory((prev) => ({
+                                  ...prev,
+                                  [speciality.id]: !prev[speciality.id],
+                                }))
+                              }
+                              className="text-xs flex items-center text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300"
+                            >
+                              <ChevronDown
+                                className={cn(
+                                  "w-4 h-4 mr-1 transition-transform",
+                                  showUnitsHistory[speciality.id] &&
+                                    "rotate-180"
+                                )}
+                              />
+                              View Balance History
+                            </button>
+
+                            {showUnitsHistory[speciality.id] && (
+                              <div className="mt-2 space-y-2">
+                                {client.unit_balances_history?.filter(
+                                  (h) => h.speciality_id === speciality.id
+                                ).length ? (
+                                  <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                                    <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                      <thead className="bg-gray-50 dark:bg-gray-800">
+                                        <tr>
+                                          <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">
+                                            Month
+                                          </th>
+                                          <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400">
+                                            Allocated
+                                          </th>
+                                          <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400">
+                                            Used
+                                          </th>
+                                          <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400">
+                                            Balance
+                                          </th>
+                                        </tr>
+                                      </thead>
+                                      <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                                        {client.unit_balances_history
+                                          ?.filter(
+                                            (h) =>
+                                              h.speciality_id === speciality.id
+                                          )
+                                          .slice(0, 6)
+                                          .map((history) => (
+                                            <tr
+                                              key={history.id}
+                                              className="text-xs"
+                                            >
+                                              <td className="px-3 py-2 text-gray-900 dark:text-gray-100">
+                                                {new Date(
+                                                  history.month_year
+                                                ).toLocaleDateString("en-US", {
+                                                  month: "short",
+                                                  year: "numeric",
+                                                })}
+                                              </td>
+                                              <td className="px-3 py-2 text-right text-gray-600 dark:text-gray-400">
+                                                {history.allocated_units}
+                                              </td>
+                                              <td className="px-3 py-2 text-right text-gray-600 dark:text-gray-400">
+                                                {history.used_units}
+                                              </td>
+                                              <td
+                                                className={cn(
+                                                  "px-3 py-2 text-right font-medium",
+                                                  history.balance < 0
+                                                    ? "text-red-600 dark:text-red-400"
+                                                    : "text-gray-900 dark:text-gray-100"
+                                                )}
+                                              >
+                                                {history.balance}
+                                              </td>
+                                            </tr>
+                                          ))}
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                ) : (
+                                  <p className="text-xs text-gray-500 dark:text-gray-400 italic text-center py-2">
+                                    No balance history available
+                                  </p>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  });
+                })()}
+              </div>
+            </div>
+          </div>
+
+          {/* Care Team Card */}
+          <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                Care Team
+              </h2>
+              <Link
+                href="/team"
+                className="text-sm text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300"
+              >
+                View All
+              </Link>
+            </div>
+
+            <div className="space-y-3">
+              {client.recent_team_members &&
+              client.recent_team_members.length > 0 ? (
+                client.recent_team_members
+                  .slice(0, 4)
+                  .map(
+                    (member: {
+                      id: number;
+                      name: string;
+                      sessions_count?: number;
+                    }) => (
+                      <div
+                        key={member.id}
+                        className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                      >
+                        <div className="flex-shrink-0">
+                          <div className="h-10 w-10 rounded-full bg-violet-100 dark:bg-violet-900/50 flex items-center justify-center">
+                            <span className="text-sm font-medium text-violet-700 dark:text-violet-300">
+                              {member.name
+                                .split(" ")
+                                .map((n) => n[0])
+                                .join("")
+                                .toUpperCase()
+                                .slice(0, 2)}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <Link
+                            href={`/team/${member.id}`}
+                            className="hover:text-violet-600 dark:hover:text-violet-400"
+                          >
+                            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                              {member.name}
+                            </p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                              {member.sessions_count || 0} session
+                              {member.sessions_count !== 1 ? "s" : ""}
+                            </p>
+                          </Link>
+                        </div>
+                        <div className="flex-shrink-0">
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300">
+                            Active
+                          </span>
+                        </div>
+                      </div>
+                    )
+                  )
+              ) : (
+                <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
+                  No team members assigned
+                </p>
+              )}
+            </div>
           </div>
         </div>
-      )}
 
-      {activeTab === "appointments" && (
-        <div className="mt-6">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-            All Appointments
-          </h2>
-          {/* We can reuse the AppointmentsPage component here, or a simplified version */}
-        </div>
-      )}
+        {/* Right Column - Sessions & Transactions */}
+        <div className="col-span-12 lg:col-span-3 space-y-6">
+          {/* Upcoming Sessions Card */}
+          <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                Upcoming Sessions
+              </h2>
+              <Link
+                href={`/appointments?client_id=${client.id}`}
+                className="text-sm text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300"
+              >
+                View All
+              </Link>
+            </div>
 
-      {activeTab === "units_billing" && (
-        <div className="mt-6">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-            Units & Billing
-          </h2>
-          {/* We can create new components for this tab */}
-        </div>
-      )}
+            <div className="space-y-3 max-h-[400px] overflow-y-auto">
+              {upcomingSessions.length > 0 ? (
+                upcomingSessions.slice(0, 5).map((session) => (
+                  <Link
+                    key={session.id}
+                    href={`/appointments/${session.id}`}
+                    className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <div className="flex-shrink-0">
+                        <div className="w-14 h-14 rounded-lg bg-violet-100 dark:bg-violet-900/50 flex items-center text-center justify-center">
+                          <span className="text-lg font-medium opacity-75 text-violet-700 dark:text-violet-300">
+                            {new Date(session.date).toLocaleDateString(
+                              "en-US",
+                              { weekday: "short" }
+                            )}
+                            <br />
+                            <span className="text-xs opacity-60">
+                              {new Date(session.date).toLocaleDateString(
+                                "en-US",
+                                { month: "short", day: "numeric" }
+                              )}
+                            </span>
+                          </span>
+                        </div>
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                          {session.start_time} - {session.end_time}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                          {session.speciality?.short_name ||
+                            session.speciality?.name}{" "}
+                          with {session.team?.name || "Unassigned"}
+                        </p>
+                      </div>
+                    </div>
+                    <span
+                      className={cn(
+                        "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize",
+                        statusColors[session.status]
+                      )}
+                    >
+                      {session.status.replace("_", " ")}
+                    </span>
+                  </Link>
+                ))
+              ) : (
+                <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
+                  No upcoming sessions
+                </p>
+              )}
+            </div>
+          </div>
 
-      {activeTab === "documents" && (
-        <div className="mt-6">
-          <DocumentsSection />
+          {/* Recent Unit Transactions Card */}
+          <UnitTransactionsSection transactions={client.unit_transactions || []} />
         </div>
-      )}
+      </div>
 
       {/* Full Width Sections - NEMT & Reports */}
       <div className="space-y-6">

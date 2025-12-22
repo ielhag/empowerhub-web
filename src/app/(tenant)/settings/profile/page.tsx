@@ -1,164 +1,303 @@
-"use client";
+'use client';
 
-import { useProfileSettings, useUpdateProfile, useUpdatePassword } from "@/hooks/useSettings";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import { Loader2 } from "lucide-react";
+import { useState, useRef } from 'react';
+import Link from 'next/link';
+import { useProfileSettings, useUpdateProfile, useUploadAvatar, useUpdatePassword } from '@/hooks/useSettings';
+import { cn } from '@/lib/utils';
+import {
+  ChevronLeft,
+  User,
+  Mail,
+  Phone,
+  Camera,
+  Loader2,
+  Check,
+  Eye,
+  EyeOff,
+} from 'lucide-react';
 
-const profileSchema = z.object({
-  name: z.string().min(1),
-  email: z.string().email(),
-});
+export default function ProfileSettingsPage() {
+  const { data: profile, isLoading } = useProfileSettings();
+  const updateProfileMutation = useUpdateProfile();
+  const uploadAvatarMutation = useUploadAvatar();
+  const updatePasswordMutation = useUpdatePassword();
 
-const passwordSchema = z
-  .object({
-    current_password: z.string().min(1),
-    new_password: z.string().min(8),
-    new_password_confirmation: z.string().min(8),
-  })
-  .refine((data) => data.new_password === data.new_password_confirmation, {
-    message: "Passwords do not match",
-    path: ["new_password_confirmation"],
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+  });
+  const [passwordData, setPasswordData] = useState({
+    current_password: '',
+    new_password: '',
+    new_password_confirmation: '',
+  });
+  const [showPassword, setShowPassword] = useState(false);
+  const [profileSaved, setProfileSaved] = useState(false);
+  const [passwordSaved, setPasswordSaved] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Initialize form data when profile loads
+  useState(() => {
+    if (profile?.user) {
+      setFormData({
+        name: profile.user.name,
+        email: profile.user.email,
+        phone: profile.user.phone || '',
+      });
+    }
   });
 
-export function ProfileSettings() {
-  const { data: settings, isLoading } = useProfileSettings();
-  const updateProfile = useUpdateProfile();
-  const updatePassword = useUpdatePassword();
-
-  const {
-    register: registerProfile,
-    handleSubmit: handleSubmitProfile,
-    formState: { isSubmitting: isSubmittingProfile },
-  } = useForm({
-    resolver: zodResolver(profileSchema),
-    values: {
-      name: settings?.user.name || "",
-      email: settings?.user.email || "",
-    },
-  });
-
-  const {
-    register: registerPassword,
-    handleSubmit: handleSubmitPassword,
-    formState: { isSubmitting: isSubmittingPassword },
-  } = useForm({
-    resolver: zodResolver(passwordSchema),
-  });
-
-  const onProfileSubmit = (data: any) => {
-    updateProfile.mutate(data);
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      try {
+        await uploadAvatarMutation.mutateAsync(file);
+      } catch (err) {
+        console.error('Failed to upload avatar:', err);
+      }
+    }
   };
 
-  const onPasswordSubmit = (data: any) => {
-    updatePassword.mutate(data);
+  const handleProfileSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await updateProfileMutation.mutateAsync(formData);
+      setProfileSaved(true);
+      setTimeout(() => setProfileSaved(false), 3000);
+    } catch (err) {
+      console.error('Failed to update profile:', err);
+    }
+  };
+
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await updatePasswordMutation.mutateAsync(passwordData);
+      setPasswordSaved(true);
+      setPasswordData({ current_password: '', new_password: '', new_password_confirmation: '' });
+      setTimeout(() => setPasswordSaved(false), 3000);
+    } catch (err) {
+      console.error('Failed to update password:', err);
+    }
   };
 
   if (isLoading) {
-    return <Loader2 className="w-8 h-8 animate-spin text-violet-600" />;
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="w-8 h-8 animate-spin text-violet-600" />
+      </div>
+    );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          Profile
-        </h3>
-        <form onSubmit={handleSubmitProfile(onProfileSubmit)} className="space-y-4">
-          <div>
-            <label
-              htmlFor="name"
-              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+    <div className="space-y-6 max-w-2xl">
+      {/* Header */}
+      <div className="flex items-center gap-4">
+        <Link
+          href="/settings"
+          className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+        >
+          <ChevronLeft className="w-5 h-5" />
+        </Link>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Profile Settings</h1>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            Manage your personal information
+          </p>
+        </div>
+      </div>
+
+      {/* Avatar Section */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Profile Photo</h2>
+        <div className="flex items-center gap-6">
+          <div className="relative">
+            {profile?.user.avatar ? (
+              <img
+                src={profile.user.avatar}
+                alt={profile.user.name}
+                className="w-20 h-20 rounded-full object-cover"
+              />
+            ) : (
+              <div className="w-20 h-20 rounded-full bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center">
+                <User className="w-10 h-10 text-violet-600 dark:text-violet-400" />
+              </div>
+            )}
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploadAvatarMutation.isPending}
+              className="absolute bottom-0 right-0 p-2 bg-violet-600 hover:bg-violet-700 text-white rounded-full shadow-lg transition-colors"
             >
-              Name
+              {uploadAvatarMutation.isPending ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Camera className="w-4 h-4" />
+              )}
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleAvatarChange}
+              className="hidden"
+            />
+          </div>
+          <div>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Upload a new profile photo. Max size 2MB.
+            </p>
+            <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+              Supported formats: JPG, PNG, GIF
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Profile Form */}
+      <form onSubmit={handleProfileSubmit} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+          Personal Information
+        </h2>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Full Name
             </label>
             <input
               type="text"
-              id="name"
-              {...registerProfile("name")}
-              className="mt-1 block w-full pl-3 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md leading-5 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-violet-500 focus:border-violet-500 sm:text-sm"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-violet-500 transition-colors"
             />
           </div>
+
           <div>
-            <label
-              htmlFor="email"
-              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-            >
-              Email
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Email Address
             </label>
-            <input
-              type="email"
-              id="email"
-              {...registerProfile("email")}
-              className="mt-1 block w-full pl-3 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md leading-5 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-violet-500 focus:border-violet-500 sm:text-sm"
-            />
+            <div className="relative">
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <input
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-violet-500 transition-colors"
+              />
+            </div>
           </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Phone Number
+            </label>
+            <div className="relative">
+              <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <input
+                type="tel"
+                value={formData.phone}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-violet-500 transition-colors"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-6 flex items-center justify-end gap-3">
+          {profileSaved && (
+            <span className="flex items-center gap-1 text-sm text-green-600 dark:text-green-400">
+              <Check className="w-4 h-4" />
+              Saved
+            </span>
+          )}
           <button
             type="submit"
-            disabled={isSubmittingProfile}
-            className="px-4 py-2 text-sm font-medium text-white bg-violet-600 border border-transparent rounded-md shadow-sm hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-violet-500"
+            disabled={updateProfileMutation.isPending}
+            className="px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-lg font-medium disabled:opacity-50 transition-colors"
           >
-            {isSubmittingProfile ? "Saving..." : "Save"}
+            {updateProfileMutation.isPending ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              'Save Changes'
+            )}
           </button>
-        </form>
-      </div>
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          Change Password
-        </h3>
-        <form onSubmit={handleSubmitPassword(onPasswordSubmit)} className="space-y-4">
+        </div>
+      </form>
+
+      {/* Password Form */}
+      <form onSubmit={handlePasswordSubmit} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Change Password</h2>
+        <div className="space-y-4">
           <div>
-            <label
-              htmlFor="current_password"
-              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-            >
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Current Password
             </label>
-            <input
-              type="password"
-              id="current_password"
-              {...registerPassword("current_password")}
-              className="mt-1 block w-full pl-3 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md leading-5 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-violet-500 focus:border-violet-500 sm:text-sm"
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                value={passwordData.current_password}
+                onChange={(e) =>
+                  setPasswordData({ ...passwordData, current_password: e.target.value })
+                }
+                className="w-full px-4 py-2.5 pr-10 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-violet-500 transition-colors"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              >
+                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+              </button>
+            </div>
           </div>
+
           <div>
-            <label
-              htmlFor="new_password"
-              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-            >
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               New Password
             </label>
             <input
-              type="password"
-              id="new_password"
-              {...registerPassword("new_password")}
-              className="mt-1 block w-full pl-3 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md leading-5 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-violet-500 focus:border-violet-500 sm:text-sm"
+              type={showPassword ? 'text' : 'password'}
+              value={passwordData.new_password}
+              onChange={(e) => setPasswordData({ ...passwordData, new_password: e.target.value })}
+              className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-violet-500 transition-colors"
             />
           </div>
+
           <div>
-            <label
-              htmlFor="new_password_confirmation"
-              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-            >
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Confirm New Password
             </label>
             <input
-              type="password"
-              id="new_password_confirmation"
-              {...registerPassword("new_password_confirmation")}
-              className="mt-1 block w-full pl-3 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md leading-5 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-violet-500 focus:border-violet-500 sm:text-sm"
+              type={showPassword ? 'text' : 'password'}
+              value={passwordData.new_password_confirmation}
+              onChange={(e) =>
+                setPasswordData({ ...passwordData, new_password_confirmation: e.target.value })
+              }
+              className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-violet-500 transition-colors"
             />
           </div>
+        </div>
+
+        <div className="mt-6 flex items-center justify-end gap-3">
+          {passwordSaved && (
+            <span className="flex items-center gap-1 text-sm text-green-600 dark:text-green-400">
+              <Check className="w-4 h-4" />
+              Password updated
+            </span>
+          )}
           <button
             type="submit"
-            disabled={isSubmittingPassword}
-            className="px-4 py-2 text-sm font-medium text-white bg-violet-600 border border-transparent rounded-md shadow-sm hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-violet-500"
+            disabled={updatePasswordMutation.isPending}
+            className="px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-lg font-medium disabled:opacity-50 transition-colors"
           >
-            {isSubmittingPassword ? "Saving..." : "Save"}
+            {updatePasswordMutation.isPending ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              'Update Password'
+            )}
           </button>
-        </form>
-      </div>
+        </div>
+      </form>
     </div>
   );
 }
