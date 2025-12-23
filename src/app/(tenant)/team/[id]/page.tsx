@@ -13,13 +13,13 @@ import {
   useDeleteNote,
   useTeamTimeLogs,
   useTeamActivities,
-  useCreateActivity,
   useDeleteActivity,
   useTeamAchievements,
   useTeamWarnings,
   useTeamScheduleRequests,
 } from "@/hooks/useTeam";
 import { useTeamAppointments } from "@/hooks/useAppointments";
+import { ActivityModal } from "@/components/features/schedule/ActivityModal";
 import { cn, formatDate } from "@/lib/utils";
 import {
   ChevronLeft,
@@ -247,21 +247,6 @@ export default function TeamMemberProfilePage() {
     null
   );
   const [showActivityModal, setShowActivityModal] = useState(false);
-  const [newActivity, setNewActivity] = useState<{
-    title: string;
-    type: "training" | "meeting" | "administrative" | "other";
-    start_time: string;
-    end_time: string;
-    location_type: string;
-    notes: string;
-  }>({
-    title: "",
-    type: "training",
-    start_time: "",
-    end_time: "",
-    location_type: "",
-    notes: "",
-  });
   const [expandedAchievementType, setExpandedAchievementType] = useState<
     string | null
   >(null);
@@ -282,7 +267,6 @@ export default function TeamMemberProfilePage() {
   const reactivateMutation = useReactivateTeamMember();
   const addNoteMutation = useAddNote();
   const deleteNoteMutation = useDeleteNote();
-  const createActivityMutation = useCreateActivity();
   const deleteActivityMutation = useDeleteActivity();
 
   // Get selected period data - auto-select current period if none selected
@@ -367,28 +351,6 @@ export default function TeamMemberProfilePage() {
   const handleDeleteNote = async (noteId: number) => {
     if (confirm("Are you sure you want to delete this note?")) {
       await deleteNoteMutation.mutateAsync({ teamId: memberId, noteId });
-    }
-  };
-
-  const handleCreateActivity = async () => {
-    if (!newActivity.title || !newActivity.start_time || !newActivity.end_time)
-      return;
-    try {
-      await createActivityMutation.mutateAsync({
-        teamId: memberId,
-        data: newActivity,
-      });
-      setShowActivityModal(false);
-      setNewActivity({
-        title: "",
-        type: "training",
-        start_time: "",
-        end_time: "",
-        location_type: "",
-        notes: "",
-      });
-    } catch (error) {
-      console.error("Failed to create activity:", error);
     }
   };
 
@@ -2130,132 +2092,15 @@ export default function TeamMemberProfilePage() {
       )}
 
       {/* Activity Modal */}
-      {showActivityModal && (
-        <div className="fixed inset-0 z-50 overflow-y-auto">
-          <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-            <div
-              className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
-              onClick={() => setShowActivityModal(false)}
-            ></div>
-            <div className="inline-block align-bottom bg-white dark:bg-gray-900 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-              <div className="px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">
-                  Add Activity
-                </h3>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Title
-                    </label>
-                    <input
-                      type="text"
-                      value={newActivity.title}
-                      onChange={(e) =>
-                        setNewActivity({
-                          ...newActivity,
-                          title: e.target.value,
-                        })
-                      }
-                      className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-800 shadow-sm focus:border-violet-500 focus:ring-violet-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Type
-                    </label>
-                    <select
-                      value={newActivity.type}
-                      onChange={(e) =>
-                        setNewActivity({
-                          ...newActivity,
-                          type: e.target.value as
-                            | "training"
-                            | "meeting"
-                            | "administrative"
-                            | "other",
-                        })
-                      }
-                      className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-800 shadow-sm focus:border-violet-500 focus:ring-violet-500"
-                    >
-                      <option value="training">Training</option>
-                      <option value="meeting">Meeting</option>
-                      <option value="administrative">Administrative</option>
-                      <option value="other">Other</option>
-                    </select>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Start Time
-                      </label>
-                      <input
-                        type="datetime-local"
-                        value={newActivity.start_time}
-                        onChange={(e) =>
-                          setNewActivity({
-                            ...newActivity,
-                            start_time: e.target.value,
-                          })
-                        }
-                        className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-800 shadow-sm focus:border-violet-500 focus:ring-violet-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                        End Time
-                      </label>
-                      <input
-                        type="datetime-local"
-                        value={newActivity.end_time}
-                        onChange={(e) =>
-                          setNewActivity({
-                            ...newActivity,
-                            end_time: e.target.value,
-                          })
-                        }
-                        className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-800 shadow-sm focus:border-violet-500 focus:ring-violet-500"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Notes
-                    </label>
-                    <textarea
-                      value={newActivity.notes}
-                      onChange={(e) =>
-                        setNewActivity({
-                          ...newActivity,
-                          notes: e.target.value,
-                        })
-                      }
-                      rows={3}
-                      className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-800 shadow-sm focus:border-violet-500 focus:ring-violet-500"
-                    />
-                  </div>
-                </div>
-              </div>
-              <div className="bg-gray-50 dark:bg-gray-800 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                <button
-                  onClick={handleCreateActivity}
-                  disabled={createActivityMutation.isPending}
-                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-violet-600 text-base font-medium text-white hover:bg-violet-700 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50"
-                >
-                  {createActivityMutation.isPending
-                    ? "Creating..."
-                    : "Create Activity"}
-                </button>
-                <button
-                  onClick={() => setShowActivityModal(false)}
-                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 dark:border-gray-600 shadow-sm px-4 py-2 bg-white dark:bg-gray-700 text-base font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <ActivityModal
+        isOpen={showActivityModal}
+        onClose={() => setShowActivityModal(false)}
+        teamId={memberId}
+        teamName={member?.name || "Team Member"}
+        onSuccess={() => {
+          // Refetch activities after successful creation
+        }}
+      />
     </div>
   );
 }

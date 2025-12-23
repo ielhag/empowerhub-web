@@ -99,11 +99,11 @@ export function useTeamAppointments(teamId: number, additionalFilters: Omit<Appo
 }
 
 // Hook: Fetch single appointment
-export function useAppointment(id: number) {
+export function useAppointment(id: number, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: appointmentKeys.detail(id),
     queryFn: () => fetchAppointment(id),
-    enabled: id > 0,
+    enabled: id > 0 && (options?.enabled ?? true),
   });
 }
 
@@ -280,6 +280,73 @@ export function useDeleteOverride() {
       queryClient.invalidateQueries({ queryKey: appointmentKeys.all });
       queryClient.setQueryData(appointmentKeys.detail(data.id), data);
     },
+  });
+}
+
+// Hook: Create backdated appointment
+export interface BackdatedAppointmentData {
+  team_id: number;
+  client_id: number;
+  service_type: number;
+  date: string;
+  start_time: string;
+  duration: number; // in units (15 min each)
+  notes?: string;
+  reason: string;
+  location_type?: string;
+}
+
+export function useCreateBackdatedAppointment() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: BackdatedAppointmentData) => {
+      const response = await api.post<AppointmentDetailResponse>(
+        '/tenant-api/appointments/backdated',
+        data
+      );
+      return response.data.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: appointmentKeys.all });
+    },
+  });
+}
+
+// Hook: Check if user has an in-progress appointment
+export function useHasInProgressAppointment(teamId: number | null | undefined) {
+  return useQuery({
+    queryKey: [...appointmentKeys.all, 'in-progress', teamId] as const,
+    queryFn: async () => {
+      if (!teamId) return false;
+      const response = await api.get<AppointmentListResponse>(
+        `/tenant-api/appointments?status=in_progress&team_id=${teamId}&per_page=1`
+      );
+      return response.data.data.length > 0;
+    },
+    enabled: !!teamId,
+    staleTime: 30 * 1000, // 30 seconds
+  });
+}
+
+// Hook: Check if user is qualified for a speciality
+export function useCheckQualifications(teamId: number | null | undefined, specialityId: number | null | undefined) {
+  return useQuery({
+    queryKey: ['qualifications', teamId, specialityId] as const,
+    queryFn: async () => {
+      if (!teamId || !specialityId) return true; // Default to qualified if no data
+      try {
+        const response = await api.get<{ success: boolean; data: { is_qualified: boolean } }>(
+          `/tenant-api/team/${teamId}/qualifications/${specialityId}`
+        );
+        return response.data.data.is_qualified;
+      } catch {
+        // If endpoint doesn't exist or fails, default to true
+        return true;
+      }
+    },
+    enabled: !!teamId && !!specialityId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 }
 

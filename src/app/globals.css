@@ -90,3 +90,61 @@ body {
 .animate-slide-in {
   animation: slideIn 0.2s ease-out;
 }
+
+/* Message word wrapping */
+.overflow-wrap-anywhere {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+/* Schedule Builder Appointment Animations */
+@keyframes pulse-blue {
+  0% {
+    box-shadow: 0 0 0 0 rgba(21, 185, 250, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(21, 185, 250, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(21, 185, 250, 0);
+  }
+}
+
+@keyframes pulse-red {
+  0% {
+    box-shadow: 0 0 0 0 rgba(234, 103, 103, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(234, 103, 103, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(234, 103, 103, 0);
+  }
+}
+
+@keyframes pulse-orange {
+  0% {
+    box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(249, 115, 22, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(249, 115, 22, 0);
+  }
+}
+
+.animate-in-progress {
+  border: 1px solid rgb(21, 185, 250) !important;
+  animation: pulse-blue 2s infinite;
+}
+
+.animate-no-show {
+  border: 1px solid rgb(234, 103, 103) !important;
+  animation: pulse-red 2s infinite;
+}
+
+.animate-late {
+  border: 1px solid rgb(249, 115, 22) !important;
+  animation: pulse-orange 2s infinite;
+}

@@ -12,13 +12,14 @@ export default function NewAppointmentPage() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 px-4 sm:px-6 lg:px-8">
       {/* Back Link */}
       <div className="max-w-4xl mx-auto mb-6">
-        <Link
-          href="/appointments"
+        <button
+          type="button"
+          onClick={() => router.back()}
           className="inline-flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
-          Back to Appointments
-        </Link>
+          Back
+        </button>
       </div>
 
       {/* Header */}

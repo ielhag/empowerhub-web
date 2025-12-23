@@ -1,6 +1,13 @@
-import axios, { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from 'axios';
+// This file is used to make API calls to the backend API.
+import { Announcement } from "@/types";
+import axios, {
+  AxiosError,
+  AxiosInstance,
+  InternalAxiosRequestConfig,
+} from "axios";
 
 // API Response types
+// This is the response type for all API calls.
 export interface ApiResponse<T = unknown> {
   success: boolean;
   data: T;
@@ -13,56 +20,107 @@ export interface ApiResponse<T = unknown> {
   };
 }
 
+// This is the error type for all API calls.
 export interface ApiError {
   success: false;
   message: string;
   errors?: Record<string, string[]>;
 }
 
+interface AnnouncementListResponse {
+  success?: boolean;
+  data?: Announcement[];
+  current_page: number;
+  per_page: number;
+  total: number;
+  last_page: number;
+}
+// Get announcements list
+export async function getAnnouncements(page: number): Promise<AnnouncementListResponse> {
+  const response = await api.get<AnnouncementListResponse>(`/announcements?page=${page}`);
+  return response.data;
+}
+
+// Get announcement detail
+export async function getAnnouncementDetail(id: number): Promise<Announcement> {
+  const response = await api.get<Announcement>(`/announcements/${id}`);
+  return response.data;
+}
+
+// Create announcement
+export async function createAnnouncement(announcement: Announcement): Promise<Announcement> {
+  const response = await api.post<Announcement>(`/announcements`, announcement);
+  return response.data;
+}
+
+// Update announcement
+
+// Delete announcement
+export async function deleteAnnouncement(id: number): Promise<void> {
+  await api.delete(`/announcements/${id}`);
+}
+
+// Publish announcement
+
+// Mark announcement as read
+export async function markAnnouncementAsRead(id: number): Promise<void> {
+  await api.post(`/announcements/${id}/read`);
+}
+
+// Add comment to announcement
+export async function addCommentToAnnouncement(id: number, comment: string): Promise<void> {
+  await api.post(`/announcements/${id}/comments`, { comment });
+}
+
+// Toggle comment like
+export async function toggleCommentLike(id: number, commentId: number): Promise<void> {
+  await api.post(`/announcements/${id}/comments/${commentId}/like`);
+}
+
 // Get tenant domain from subdomain or localStorage
 export function getTenantDomain(): string | null {
   // In browser, extract from subdomain
-  if (typeof window !== 'undefined') {
+  if (typeof window !== "undefined") {
     const hostname = window.location.hostname;
 
     // For local development with Valet (e.g., tenant.empowerhub-web.test or tenant.empowerhub.test)
-    if (hostname.endsWith('.test')) {
-      const parts = hostname.split('.');
+    if (hostname.endsWith(".test")) {
+      const parts = hostname.split(".");
       // tenant.empowerhub-web.test → ['tenant', 'empowerhub-web', 'test']
       // tenant.empowerhub.test → ['tenant', 'empowerhub', 'test']
       if (parts.length >= 3) {
         const subdomain = parts[0];
-        if (!['www', 'app', 'api', 'admin', 'mail'].includes(subdomain)) {
+        if (!["www", "app", "api", "admin", "mail"].includes(subdomain)) {
           return subdomain;
         }
       }
     }
 
     // For localhost with query param fallback (e.g., localhost:3000?tenant=acme)
-    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    if (hostname === "localhost" || hostname === "127.0.0.1") {
       const urlParams = new URLSearchParams(window.location.search);
-      const tenantParam = urlParams.get('tenant');
+      const tenantParam = urlParams.get("tenant");
       if (tenantParam) {
         // Store it for subsequent requests
-        localStorage.setItem('tenant_domain', tenantParam);
+        localStorage.setItem("tenant_domain", tenantParam);
         return tenantParam;
       }
       // Fallback to stored domain
-      return localStorage.getItem('tenant_domain');
+      return localStorage.getItem("tenant_domain");
     }
 
     // For production (e.g., tenant.empowerhub.io)
-    const parts = hostname.split('.');
+    const parts = hostname.split(".");
     if (parts.length >= 3) {
       const subdomain = parts[0];
       // Exclude common non-tenant subdomains
-      if (!['www', 'app', 'api', 'admin', 'mail'].includes(subdomain)) {
+      if (!["www", "app", "api", "admin", "mail"].includes(subdomain)) {
         return subdomain;
       }
     }
 
     // Fallback to stored domain (from login or query param)
-    return localStorage.getItem('tenant_domain');
+    return localStorage.getItem("tenant_domain");
   }
 
   return null;
@@ -70,8 +128,8 @@ export function getTenantDomain(): string | null {
 
 // Get auth token from localStorage
 function getAuthToken(): string | null {
-  if (typeof window !== 'undefined') {
-    return localStorage.getItem('auth_token');
+  if (typeof window !== "undefined") {
+    return localStorage.getItem("auth_token");
   }
   return null;
 }
@@ -80,36 +138,36 @@ function getAuthToken(): string | null {
 function getApiBaseUrl(): string {
   const tenantDomain = getTenantDomain();
 
-  if (tenantDomain && typeof window !== 'undefined') {
+  if (tenantDomain && typeof window !== "undefined") {
     const hostname = window.location.hostname;
 
     // In development with Valet: use carecade.test for the API
     // The Next.js frontend runs on empowerhub-web.test
     // The Laravel API runs on carecade.test (linked in Valet)
-    if (hostname.endsWith('.test')) {
+    if (hostname.endsWith(".test")) {
       return `https://${tenantDomain}.carecade.test`;
     }
 
     // In production: tenant.empowerhub.io
-    if (hostname.endsWith('.io')) {
+    if (hostname.endsWith(".io")) {
       return `https://${tenantDomain}.empowerhub.io`;
     }
 
     // On localhost - target the tenant subdomain on carecade.test
-    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    if (hostname === "localhost" || hostname === "127.0.0.1") {
       return `https://${tenantDomain}.carecade.test`;
     }
   }
 
   // Fallback to env variable or default
-  return process.env.NEXT_PUBLIC_API_URL || 'https://carecade.test';
+  return process.env.NEXT_PUBLIC_API_URL || "https://carecade.test";
 }
 
 // Create axios instance
 const api: AxiosInstance = axios.create({
   headers: {
-    'Accept': 'application/json',
-    'Content-Type': 'application/json',
+    Accept: "application/json",
+    "Content-Type": "application/json",
   },
   withCredentials: true,
   timeout: 30000,
@@ -124,13 +182,13 @@ api.interceptors.request.use(
     // Add tenant domain header
     const domain = getTenantDomain();
     if (domain) {
-      config.headers['X-Tenant-Domain'] = domain;
+      config.headers["X-Tenant-Domain"] = domain;
     }
 
     // Add auth token
     const token = getAuthToken();
     if (token) {
-      config.headers['Authorization'] = `Bearer ${token}`;
+      config.headers["Authorization"] = `Bearer ${token}`;
     }
 
     return config;
@@ -144,16 +202,16 @@ api.interceptors.response.use(
   (error: AxiosError<ApiError>) => {
     // Handle 401 - redirect to login
     if (error.response?.status === 401) {
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('auth_token');
-        localStorage.removeItem('user');
-        window.location.href = '/login';
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("auth_token");
+        localStorage.removeItem("user");
+        window.location.href = "/login";
       }
     }
 
     // Handle 403 - permission denied
     if (error.response?.status === 403) {
-      console.error('Permission denied:', error.response.data?.message);
+      console.error("Permission denied:", error.response.data?.message);
     }
 
     // Handle 422 - validation error
@@ -164,7 +222,7 @@ api.interceptors.response.use(
 
     // Handle 500 - server error
     if (error.response?.status === 500) {
-      console.error('Server error:', error.response.data?.message);
+      console.error("Server error:", error.response.data?.message);
     }
 
     return Promise.reject(error);
@@ -190,22 +248,34 @@ export default api;
  */
 
 // Helper function to make typed API calls
-export async function apiGet<T>(url: string, params?: Record<string, unknown>): Promise<ApiResponse<T>> {
+export async function apiGet<T>(
+  url: string,
+  params?: Record<string, unknown>
+): Promise<ApiResponse<T>> {
   const response = await api.get<ApiResponse<T>>(url, { params });
   return response.data;
 }
 
-export async function apiPost<T>(url: string, data?: Record<string, unknown>): Promise<ApiResponse<T>> {
+export async function apiPost<T>(
+  url: string,
+  data?: Record<string, unknown>
+): Promise<ApiResponse<T>> {
   const response = await api.post<ApiResponse<T>>(url, data);
   return response.data;
 }
 
-export async function apiPut<T>(url: string, data?: Record<string, unknown>): Promise<ApiResponse<T>> {
+export async function apiPut<T>(
+  url: string,
+  data?: Record<string, unknown>
+): Promise<ApiResponse<T>> {
   const response = await api.put<ApiResponse<T>>(url, data);
   return response.data;
 }
 
-export async function apiPatch<T>(url: string, data?: Record<string, unknown>): Promise<ApiResponse<T>> {
+export async function apiPatch<T>(
+  url: string,
+  data?: Record<string, unknown>
+): Promise<ApiResponse<T>> {
   const response = await api.patch<ApiResponse<T>>(url, data);
   return response.data;
 }
@@ -213,4 +283,57 @@ export async function apiPatch<T>(url: string, data?: Record<string, unknown>): 
 export async function apiDelete<T>(url: string): Promise<ApiResponse<T>> {
   const response = await api.delete<ApiResponse<T>>(url);
   return response.data;
+}
+
+// Helper function to download files (Excel, PDF, etc.)
+export async function apiDownload(
+  url: string,
+  params?: Record<string, unknown>
+): Promise<void> {
+  try {
+    const response = await api.get(url, {
+      params,
+      responseType: "blob", // Important: tells axios to expect binary data
+      headers: {
+        Accept:
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/pdf, application/octet-stream",
+      },
+    });
+
+    // Extract filename from Content-Disposition header or generate one
+    let filename = "download.xlsx";
+    const contentDisposition = response.headers["content-disposition"];
+    if (contentDisposition) {
+      const filenameMatch = contentDisposition.match(
+        /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/
+      );
+      if (filenameMatch && filenameMatch[1]) {
+        filename = filenameMatch[1].replace(/['"]/g, "");
+      }
+    }
+
+    // Create blob from response data
+    const blob = new Blob([response.data], {
+      type: response.headers["content-type"] || "application/octet-stream",
+    });
+
+    // Create download link and trigger download
+    const downloadUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = downloadUrl;
+    link.download = filename;
+    link.style.display = "none";
+
+    document.body.appendChild(link);
+    link.click();
+
+    // Clean up
+    setTimeout(() => {
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(downloadUrl);
+    }, 100);
+  } catch (error) {
+    console.error("Download failed:", error);
+    throw error;
+  }
 }

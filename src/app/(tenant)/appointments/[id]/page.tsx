@@ -11,7 +11,17 @@ import {
   useDeleteAppointment,
   useAssignToSelf,
   useOverrideTimes,
+  useCheckQualifications,
+  useHasInProgressAppointment,
 } from '@/hooks/useAppointments';
+import {
+  canStartAppointment,
+  canAssignToSelf as checkCanAssignToSelf,
+  canCompleteAppointment,
+  canCancelAppointment,
+  getMinutesUntilStart,
+  getStartWindow,
+} from '@/lib/appointmentValidation';
 import dynamic from 'next/dynamic';
 
 // Dynamic import of LocationMap to avoid SSR issues with Leaflet
@@ -33,6 +43,7 @@ import { StatusBadge } from '@/components/ui/StatusBadge';
 import { ConfirmModal, FormModal } from '@/components/ui/Modal';
 import { VerificationMapModal } from '@/components/ui/VerificationMapModal';
 import type { AssignmentHistory } from '@/types';
+import { TransportationSection } from '@/components/features/appointments/TransportationSection';
 import {
   ArrowLeft,
   Calendar,
@@ -79,6 +90,18 @@ export default function AppointmentDetailsPage() {
   const assignToSelfMutation = useAssignToSelf();
   const overrideTimesMutation = useOverrideTimes();
 
+  // Get user's team ID for validation
+  const currentTeamId = user?.team?.id;
+
+  // Check if user has another in-progress appointment
+  const { data: hasInProgressAppointment = false } = useHasInProgressAppointment(currentTeamId);
+
+  // Check if user is qualified for the appointment's speciality
+  const { data: isQualifiedForSpeciality = true } = useCheckQualifications(
+    currentTeamId,
+    appointment?.speciality_id
+  );
+
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
   const [showCompleteModal, setShowCompleteModal] = useState(false);
@@ -86,6 +109,7 @@ export default function AppointmentDetailsPage() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showAllTracks, setShowAllTracks] = useState(false);
   const [now, setNow] = useState(new Date());
+  const [actionError, setActionError] = useState<string | null>(null);
 
   // Override times state
   const [showOverrideModal, setShowOverrideModal] = useState(false);
@@ -188,50 +212,75 @@ export default function AppointmentDetailsPage() {
     );
   }
 
+  // Helper to extract error message from API error
+  const getErrorMessage = (err: unknown): string => {
+    if (err && typeof err === 'object') {
+      const axiosError = err as { response?: { data?: { message?: string } } };
+      return axiosError.response?.data?.message || 'An error occurred';
+    }
+    return 'An error occurred';
+  };
+
+  // Clear error after 5 seconds
+  const showError = (message: string) => {
+    setActionError(message);
+    setTimeout(() => setActionError(null), 5000);
+  };
+
   // Action handlers
   const handleStart = async () => {
     try {
+      setActionError(null);
       await startMutation.mutateAsync(appointmentId);
     } catch (err) {
       console.error('Failed to start appointment:', err);
+      showError(getErrorMessage(err));
     }
   };
 
   const handleComplete = async () => {
     try {
+      setActionError(null);
       await completeMutation.mutateAsync({ id: appointmentId, notes: completeNotes });
       setShowCompleteModal(false);
       setCompleteNotes('');
     } catch (err) {
       console.error('Failed to complete appointment:', err);
+      showError(getErrorMessage(err));
     }
   };
 
   const handleCancel = async () => {
     if (!cancelReason.trim()) return;
     try {
+      setActionError(null);
       await cancelMutation.mutateAsync({ id: appointmentId, reason: cancelReason });
       setShowCancelModal(false);
       setCancelReason('');
     } catch (err) {
       console.error('Failed to cancel appointment:', err);
+      showError(getErrorMessage(err));
     }
   };
 
   const handleDelete = async () => {
     try {
+      setActionError(null);
       await deleteMutation.mutateAsync(appointmentId);
       router.push('/appointments');
     } catch (err) {
       console.error('Failed to delete appointment:', err);
+      showError(getErrorMessage(err));
     }
   };
 
   const handleAssignToSelf = async () => {
     try {
+      setActionError(null);
       await assignToSelfMutation.mutateAsync(appointmentId);
     } catch (err) {
       console.error('Failed to assign appointment:', err);
+      showError(getErrorMessage(err));
     }
   };
 
@@ -364,14 +413,35 @@ export default function AppointmentDetailsPage() {
   // Check if there's already an override in history
   const hasExistingOverride = appointment?.assignment_history?.some(h => h.action === 'time_override');
 
-  // Permission checks
+  // Permission checks using validation utilities
   const isAdminOrSuperAdmin = isAdmin() || isSuperAdmin();
   const canEdit = isAdminOrSuperAdmin && !['completed', 'cancelled', 'no_show', 'deleted'].includes(appointment.status);
-  const canStart = appointment.status === 'scheduled' && appointment.team_id;
-  const canComplete = appointment.status === 'in_progress';
-  const canCancel = isAdminOrSuperAdmin && ['scheduled', 'unassigned'].includes(appointment.status);
+
+  // Use comprehensive validation for starting appointments
+  // Exclude current appointment from the in-progress check
+  const currentAppointmentIsInProgress = appointment.status === 'in_progress';
+  const otherInProgressAppointment = hasInProgressAppointment && !currentAppointmentIsInProgress;
+  const startValidation = canStartAppointment(appointment, currentTeamId, otherInProgressAppointment);
+  const canStart = startValidation.canStart;
+  const startDisabledReason = startValidation.reason;
+
+  // Use comprehensive validation for completing appointments
+  const completeValidation = canCompleteAppointment(appointment);
+  const canComplete = completeValidation.canComplete;
+
+  // Use comprehensive validation for cancelling appointments
+  const cancelValidation = canCancelAppointment(appointment, isAdminOrSuperAdmin);
+  const canCancel = cancelValidation.canCancel;
+
+  // Delete check - admin only, not for certain statuses
   const canDelete = isAdminOrSuperAdmin && !['completed', 'in_progress', 'cancelled', 'rejected', 'no_show', 'deleted'].includes(appointment.status);
-  const canAssignToSelf = appointment.status === 'unassigned' && !appointment.team_id;
+
+  // Use comprehensive validation for assigning to self
+  const assignValidation = checkCanAssignToSelf(appointment, isQualifiedForSpeciality);
+  const canAssignToSelf = assignValidation.canAssign;
+  const assignDisabledReason = assignValidation.reason;
+
+  // Override is admin-only for specific statuses
   const canOverride = isAdminOrSuperAdmin && ['in_progress', 'completed', 'terminated_by_client', 'terminated_by_staff'].includes(appointment.status);
 
   // Client and Team info
@@ -431,36 +501,52 @@ export default function AppointmentDetailsPage() {
               </Link>
             )}
 
-            {/* Assign to Self - Staff when unassigned */}
-            {canAssignToSelf && (
-              <button
-                onClick={handleAssignToSelf}
-                disabled={assignToSelfMutation.isPending}
-                className="inline-flex items-center gap-1.5 px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
-              >
-                {assignToSelfMutation.isPending ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <UserPlus className="w-4 h-4" />
+            {/* Assign to Self - Only for staff members with a team, when unassigned */}
+            {appointment.status === 'unassigned' && isStaff() && currentTeamId && (
+              <div className="relative group">
+                <button
+                  onClick={handleAssignToSelf}
+                  disabled={!canAssignToSelf || assignToSelfMutation.isPending}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {assignToSelfMutation.isPending ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <UserPlus className="w-4 h-4" />
+                  )}
+                  Assign to Self
+                </button>
+                {!canAssignToSelf && assignDisabledReason && (
+                  <div className="absolute bottom-full left-0 mb-2 px-3 py-2 text-xs text-white bg-gray-900 rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50">
+                    {assignDisabledReason}
+                    <div className="absolute -bottom-1 left-4 w-2 h-2 bg-gray-900 transform rotate-45"></div>
+                  </div>
                 )}
-                Assign to Self
-              </button>
+              </div>
             )}
 
-            {/* Start Button */}
-            {canStart && (
-              <button
-                onClick={handleStart}
-                disabled={startMutation.isPending}
-                className="inline-flex items-center gap-1.5 px-3 py-2 bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
-              >
-                {startMutation.isPending ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Play className="w-4 h-4" />
+            {/* Start Button - Show for scheduled/late appointments */}
+            {['scheduled', 'late'].includes(appointment.status) && (
+              <div className="relative group">
+                <button
+                  onClick={handleStart}
+                  disabled={!canStart || startMutation.isPending}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {startMutation.isPending ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Play className="w-4 h-4" />
+                  )}
+                  Start
+                </button>
+                {!canStart && startDisabledReason && (
+                  <div className="absolute bottom-full left-0 mb-2 px-3 py-2 text-xs text-white bg-gray-900 rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 max-w-xs">
+                    {startDisabledReason}
+                    <div className="absolute -bottom-1 left-4 w-2 h-2 bg-gray-900 transform rotate-45"></div>
+                  </div>
                 )}
-                Start
-              </button>
+              </div>
             )}
 
             {/* Complete Button */}
@@ -523,6 +609,20 @@ export default function AppointmentDetailsPage() {
               </button>
             )}
           </div>
+
+          {/* Error Alert */}
+          {actionError && (
+            <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-center gap-2">
+              <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
+              <span className="text-sm text-red-700 dark:text-red-300">{actionError}</span>
+              <button
+                onClick={() => setActionError(null)}
+                className="ml-auto text-red-500 hover:text-red-700 dark:hover:text-red-300"
+              >
+                <XCircle className="w-4 h-4" />
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -537,6 +637,24 @@ export default function AppointmentDetailsPage() {
               {/* Status Badges */}
               <div className="flex flex-wrap gap-2">
                 <StatusBadge status={appointment.status} type="appointment" />
+
+                {/* Cover Request Indicator */}
+                {appointment.has_cover_request && (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium bg-yellow-100 dark:bg-yellow-900/50 text-yellow-700 dark:text-yellow-300 rounded-full border border-yellow-300 dark:border-yellow-600">
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Cover Requested
+                  </span>
+                )}
+
+                {/* NEMT Transportation Indicator */}
+                {appointment.nemt_occurrence_id && (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium bg-violet-100 dark:bg-violet-900/50 text-violet-700 dark:text-violet-300 rounded-full border border-violet-300 dark:border-violet-600">
+                    <Bus className="w-3.5 h-3.5" />
+                    NEMT Attached
+                  </span>
+                )}
 
                 {/* Duration Badge for completed appointments */}
                 {[
@@ -639,16 +757,17 @@ export default function AppointmentDetailsPage() {
                   </span>
                 </div>
 
-                {/* Location */}
+                {/* Visit Location */}
                 <div className="flex items-start gap-3">
                   <MapPin className="w-5 h-5 text-gray-400 flex-shrink-0 mt-0.5" />
                   <div className="flex flex-col gap-2">
-                    <span className="text-gray-600 dark:text-gray-400 capitalize">
-                      {appointment.location_type?.replace("_", " ") || "N/A"}
-                    </span>
-                    {appointment.address?.full_address && (
-                      <span className="text-gray-500 dark:text-gray-500 text-sm">
+                    {appointment.address?.full_address ? (
+                      <span className="text-gray-600 dark:text-gray-400">
                         {appointment.address.full_address}
+                      </span>
+                    ) : (
+                      <span className="text-gray-400 dark:text-gray-500">
+                        No address on file
                       </span>
                     )}
                     {mapUrl && (
@@ -883,6 +1002,9 @@ export default function AppointmentDetailsPage() {
               </div>
             </div>
           )}
+
+          {/* Transportation Mileage Section */}
+          <TransportationSection appointment={appointment} />
         </div>
 
         {/* Right Column - Participants, Notes, History */}

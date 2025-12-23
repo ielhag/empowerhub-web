@@ -9,6 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@ckeditor/ckeditor5-build-classic": "github:ckeditor/ckeditor5-build-classic",
     "@hookform/resolvers": "^5.2.2",
     "@radix-ui/react-avatar": "^1.1.11",
     "@radix-ui/react-checkbox": "^1.3.3",
@@ -23,6 +24,11 @@
     "@radix-ui/react-tabs": "^1.1.13",
     "@radix-ui/react-tooltip": "^1.2.8",
     "@tanstack/react-query": "^5.90.12",
+    "@tiptap/extension-link": "^3.14.0",
+    "@tiptap/extension-placeholder": "^3.14.0",
+    "@tiptap/extension-underline": "^3.14.0",
+    "@tiptap/react": "^3.14.0",
+    "@tiptap/starter-kit": "^3.14.0",
     "@types/leaflet": "^1.9.21",
     "axios": "^1.13.2",
     "clsx": "^2.1.1",

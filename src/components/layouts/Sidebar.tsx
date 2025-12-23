@@ -101,6 +101,12 @@ const getNavItems = (
     label: "Schedule",
     icon: CalendarDays,
     children: [
+      {
+        href: "/schedule",
+        label: "Schedule Builder",
+        icon: CalendarDays,
+        requiredAccessLevel: 1,
+      },
       { href: "/appointments", label: "Appointments", icon: Calendar },
       {
         href: "/appointments/unassigned",

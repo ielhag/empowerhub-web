@@ -6,8 +6,19 @@ export interface User {
   phone?: string;
   avatar?: string;
   access_level: 0 | 1 | 2; // 0=Super Admin, 1=Admin, 2=Staff
-  role: 'admin' | 'staff' | 'client' | 'case_manager';
-  status: 'active' | 'inactive' | 'suspended' | 'terminated' | 'on_leave' | number; // Can be string or number (0=Inactive, 1=Active, etc)
+  role: "admin" | "staff" | "client" | "case_manager";
+  status:
+    | "active"
+    | "inactive"
+    | "suspended"
+    | "terminated"
+    | "on_leave"
+    | number; // Can be string or number (0=Inactive, 1=Active, etc)
+  // Team info for staff members (populated when user is a team member)
+  team?: {
+    id: number;
+    specialities?: { id: number; name: string; short_name: string }[];
+  };
   created_at: string;
   updated_at: string;
 }
@@ -21,7 +32,7 @@ export interface TeamMember extends User {
 
 export interface Compensation {
   rate: number;
-  rate_type: 'hourly' | 'salary';
+  rate_type: "hourly" | "salary";
   effective_date: string;
 }
 
@@ -46,7 +57,86 @@ export interface Certification {
   name: string;
   issued_date?: string;
   expiry_date?: string;
-  status: 'valid' | 'expired' | 'pending' | 'expiring_soon';
+  status: "valid" | "expired" | "pending" | "expiring_soon";
+}
+
+// Team Activity Types
+export type TeamActivityType = 'training' | 'meeting' | 'administrative' | 'adjustment' | 'other';
+export type TeamActivityStatus = 'scheduled' | 'completed' | 'cancelled' | 'rejected' | 'no_show';
+
+export interface TeamActivity {
+  id: number;
+  team_id: number;
+  team?: {
+    id: number;
+    name?: string;
+  };
+  type: TeamActivityType;
+  title: string;
+  description?: string;
+  start_time: string;
+  end_time: string;
+  status: TeamActivityStatus;
+  location_type?: 'onsite' | 'remote';
+  location?: string;
+  is_paid: boolean;
+  rate_override?: number | null;
+  notes?: string;
+  is_in_finalized_report?: boolean;
+  assigned_by?: number;
+  approved_by?: number;
+  approved_at?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+// Working Hours for schedule API
+export interface TeamWorkingHours {
+  id?: number;
+  day_of_week: 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
+  start_time: string;
+  end_time: string;
+  is_active: boolean;
+}
+
+// Announcement Types
+export interface Announcement {
+  id: number;
+  title: string;
+  content: string;
+  published_at?: string;
+  status: "draft" | "published" | "archived";
+  author_id?: number;
+  author?: User;
+  read_by?: User[];
+  likes?: User[];
+  comments?: AnnouncementComment[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AnnouncementComment {
+  id: number;
+  announcement_id: number;
+  comment: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AnnouncementLike {
+  id: number;
+  announcement_id: number;
+  user_id: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AnnouncementRead {
+  id: number;
+  announcement_id: number;
+  user_id: number;
+  created_at: string;
+  updated_at: string;
 }
 
 // Speciality Types
@@ -54,7 +144,25 @@ export interface Speciality {
   id: number;
   name: string;
   short_name: string;
-  status: 'active' | 'inactive';
+  description?: string;
+  rate?: string;
+  rate_description?: string;
+  service_code?: string;
+  service_code_description?: string;
+  service_code_modifier?: string | null;
+  status: "active" | "inactive" | boolean;
+  is_coach?: boolean;
+  color?: {
+    bg: string;
+    text: string;
+    border: string;
+    hover: string;
+  };
+  can_see_rate?: boolean;
+  masked_rate?: string;
+  created_at?: string;
+  updated_at?: string;
+  deleted_at?: string | null;
 }
 
 // Client Types
@@ -69,17 +177,24 @@ export interface Client {
   last_name?: string;
   phone?: string;
   date_of_birth?: string | null;
-  gender?: 'male' | 'female' | 'other';
+  gender?: "male" | "female" | "other";
   facility_id?: number;
   facility?: Facility;
   case_manager_id?: number;
   case_manager?: CaseManager;
-  status: 'active' | 'inactive' | 'archived';
+  status: "active" | "inactive" | "archived";
   is_inactive?: boolean; // Computed flag for archived/inactive clients
   nemt_broker_id?: number;
   nemt_broker?: NEMTBroker;
   available_nemt_brokers?: NEMTBroker[]; // All brokers for selection dropdown
   address?: Address;
+  // Geocoded address with coordinates for EVV (copied directly to appointments)
+  geocoded_address?: GeocodedAddress;
+  // Individual address fields (raw values, may not have coordinates)
+  address_street?: string;
+  address_city?: string;
+  address_state?: string;
+  address_zip?: string;
   // Unit allocations (how many units allocated per service)
   units?: ClientUnitAllocation[];
   // Unit balances (monthly balance records)
@@ -157,7 +272,7 @@ export interface NEMTRequest {
   dda_region?: string;
   assessor_name?: string;
   assessor_phone?: string;
-  mobility_status?: 'Wheelchair' | 'Walker' | 'Cane' | 'None';
+  mobility_status?: "Wheelchair" | "Walker" | "Cane" | "None";
   pickup_address?: string;
   dropoff_address?: string;
   appointment_start_time?: string;
@@ -222,7 +337,7 @@ export interface NEMTRequestFormData {
   dda_region: string;
   assessor_name: string;
   assessor_phone: string;
-  mobility_status: 'Wheelchair' | 'Walker' | 'Cane' | 'None';
+  mobility_status: "Wheelchair" | "Walker" | "Cane" | "None";
   pickup_address: string;
   dropoff_address: string;
   appointment_start_time: string;
@@ -281,6 +396,10 @@ export interface NEMTBroker {
 // Client speciality with pivot data
 export interface ClientSpeciality extends Speciality {
   pivot?: {
+    client_id: number;
+    speciality_id: number;
+    units: number; // Total allocated units
+    current_balance: number; // Remaining units
     status: number; // 1=active, 0=inactive
     created_at?: string;
   };
@@ -295,7 +414,7 @@ export interface UnitBalanceHistory {
   balance: number;
   used_units: number;
   allocated_units: number;
-  status?: 'active' | 'expired';
+  status?: "active" | "expired";
 }
 
 // Client preferences as stored in database
@@ -332,8 +451,13 @@ export interface ActiveAppointment {
 }
 
 // Unit Transaction Types
-export type UnitTransactionType = 'allocation' | 'usage' | 'adjustment' | 'cancellation' | 'emergency_usage';
-export type UnitTransactionReferenceType = 'appointment' | 'manual' | 'system';
+export type UnitTransactionType =
+  | "allocation"
+  | "usage"
+  | "adjustment"
+  | "cancellation"
+  | "emergency_usage";
+export type UnitTransactionReferenceType = "appointment" | "manual" | "system";
 
 export interface UnitTransaction {
   id: number;
@@ -375,36 +499,86 @@ export interface UnitBalance {
   allocated_units: number;
   used_units: number;
   available_units?: number; // Alias for balance
-  status?: 'active' | 'expired' | string;
+  status?: "active" | "expired" | string;
 }
 
 export interface Facility {
   id: number;
   name: string;
+  email?: string | null;
+  phone?: string | null;
+  fax?: string | null;
   address?: Address;
-  phone?: string;
-  status: 'active' | 'paused' | 'inactive';
+  status: "active" | "paused" | "inactive" | string;
   vaccine_required?: boolean;
+  clients_count?: number;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface CaseManager {
   id: number;
-  user_id?: number;
+  user_id: number | null;
   user?: User;
-  name?: string; // Direct name property or computed from user.name
-  email?: string;
-  phone?: string;
-  clients_count?: number;
+  name: string;
+  email: string;
+  phone: string | null;
+  status: boolean;
+  created_at: string;
+  updated_at: string;
+  active_clients: number;
+  inactive_clients: number;
+  total_clients: number;
+}
+
+// Optimized case manager detail response
+export interface CaseManagerDetailResponse {
+  success: boolean;
+  data: {
+    case_manager: {
+      id: number;
+      name: string;
+      email: string;
+      phone: string | null;
+      status: boolean;
+      clients: Array<{
+        id: number;
+        client_id: string;
+        name: string;
+        status: number;
+        upcoming_appointments_count: number;
+        specialities: Array<{
+          id: number;
+          name: string;
+          short_name: string;
+          current_balance: number;
+        }>;
+      }>;
+    };
+  };
+  message?: string;
+}
+
+export interface UnitBySpeciality {
+  speciality: Speciality;
+  units: { current_balance: number }[];
 }
 
 export interface Address {
-  street?: string;
+  address?: string; // Street address line
+  street?: string; // Alias for address
   city?: string;
   state?: string;
   zip?: string;
   full_address?: string;
   latitude?: number;
   longitude?: number;
+}
+
+// Geocoded address with guaranteed coordinates
+export interface GeocodedAddress extends Address {
+  latitude: number;
+  longitude: number;
 }
 
 // Appointment Types
@@ -420,6 +594,12 @@ export interface Appointment {
   speciality_id: number;
   speciality?: Speciality;
   speciality_name?: string; // Direct from API dashboard response
+  speciality_color?: {
+    bg: string;
+    text: string;
+    border: string;
+    hover: string;
+  };
   title?: string;
   date: string;
   start_time: string;
@@ -429,15 +609,22 @@ export interface Appointment {
   duration: number; // in minutes
   duration_minutes?: number; // alias for duration
   status: AppointmentStatus;
-  location_type: 'in_home' | 'facility' | 'community' | 'remote';
+  location_type: "in_home" | "facility" | "community" | "remote";
   address?: Address;
   notes?: string;
   completion_notes?: string;
   units_required?: number;
   is_recurring: boolean;
   recurrence_rule?: RecurrenceRule;
+  // NEMT Transportation
   nemt_occurrence_id?: number;
   nemt_occurrence?: NEMTOccurrence;
+  // Cover request (when team member requests backup)
+  has_cover_request?: boolean;
+  cover_request?: CoverRequest;
+  // Draft status (for schedule builder)
+  is_draft?: boolean;
+  is_published?: boolean;
   started_at?: string;
   completed_at?: string;
   cancelled_at?: string;
@@ -446,8 +633,56 @@ export interface Appointment {
   voice_confirmation_path?: string;
   assignment_history?: AssignmentHistory[];
   location_tracks?: LocationTrack[];
+  // Transportation mileage tracking
+  trips?: TransportationTrip[];
   created_at: string;
   updated_at: string;
+}
+
+// Cover request when team member needs backup
+export interface CoverRequest {
+  id: number;
+  appointment_id: number;
+  team_id: number;
+  reason?: string;
+  status: 'pending' | 'covered' | 'cancelled';
+  covered_by_id?: number;
+  covered_by?: TeamMember;
+  requested_at: string;
+  resolved_at?: string;
+}
+
+// Transportation Trip (mileage tracking for appointments)
+export interface TransportationTrip {
+  id: number;
+  appointment_id: number;
+  trip_type: 'outbound' | 'return';
+  from_address: {
+    address: string;
+    city: string;
+    state: string;
+    zip: string;
+    latitude?: number;
+    longitude?: number;
+  };
+  to_address: {
+    address: string;
+    city: string;
+    state: string;
+    zip: string;
+    latitude?: number;
+    longitude?: number;
+  };
+  distance_miles: number;
+  start_time: string;
+  end_time: string;
+  duration_minutes?: number;
+  units_used?: number;
+  status: 'completed' | 'cancelled';
+  notes?: string;
+  unit_transaction_id?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 // Assignment History for appointment timeline
@@ -501,50 +736,63 @@ export interface LocationTrack {
   address?: string;
 }
 
-// NEMT Transportation
+// NEMT Transportation Occurrence (for appointment linking)
 export interface NEMTOccurrence {
   id: number;
   nemt_request_id: number;
+  nemt_request?: NEMTRequest;
   transportation_date?: string;
   transportation_company?: string;
   confirmed_pickup_time?: string;
   broker_name?: string;
+  // Pickup window times (for validation)
+  pickup_time_from?: string;
+  pickup_time_to?: string;
   pickup_window_start?: string;
   pickup_window_end?: string;
+  // Return window times
+  return_time_from?: string;
+  return_time_to?: string;
   return_window_start?: string;
   return_window_end?: string;
+  // Addresses
   dropoff_address?: string;
   pickup_address?: string;
   notes?: string;
   is_cancelled?: boolean;
   cancellation_reason?: string;
-  status?: 'pending' | 'confirmed' | 'cancelled';
+  status?: "pending" | "confirmed" | "cancelled" | "matched";
+  // Linked appointment (if already matched)
+  appointment_id?: number;
 }
 
 export type AppointmentStatus =
-  | 'pending'
-  | 'confirmed'
-  | 'scheduled'
-  | 'unassigned'
-  | 'in_progress'
-  | 'completed'
-  | 'cancelled'
-  | 'no_show'
-  | 'late'
-  | 'rejected'
-  | 'terminated_by_client'
-  | 'terminated_by_staff'
-  | 'deleted';
+  | "pending"
+  | "confirmed"
+  | "scheduled"
+  | "unassigned"
+  | "in_progress"
+  | "completed"
+  | "cancelled"
+  | "no_show"
+  | "late"
+  | "rejected"
+  | "terminated_by_client"
+  | "terminated_by_staff"
+  | "deleted";
 
 export interface RecurrenceRule {
-  pattern: 'daily' | 'weekly' | 'biweekly' | 'monthly';
+  pattern: "daily" | "weekly" | "biweekly" | "monthly";
   until?: string;
   days_of_week?: number[];
 }
 
 // DSHS Report Types
-export type DSHSReportType = 'specialized_habilitation' | 'community_engagement' | 'staff_family_consultation';
-export type DSHSReportStatus = 'draft' | 'submitted' | 'approved' | 'rejected';
+export type DSHSReportType =
+  | "specialized_habilitation"
+  | "community_engagement"
+  | "staff_family_consultation";
+export type DSHSReportStatus = "draft" | "submitted" | "approved" | "rejected";
 
 export interface DSHSGoal {
   description: string;
@@ -618,7 +866,14 @@ export interface DSHSReport {
   updated_at?: string;
 }
 
-export interface DSHSReportFormData extends Omit<DSHSReport, 'id' | 'status' | 'created_at' | 'updated_at'> {}
+export interface DSHSReportFormData
+  extends Omit<DSHSReport, "id" | "status" | "created_at" | "updated_at"> {
+  goals: DSHSGoal[];
+  treatment_strategies: DSHSTreatmentStrategy[];
+  progress_summary: DSHSProgressSummary[];
+  goal_completion_scores: DSHSGoalScore[];
+  care_team: DSHSCareTeamMember[];
+}
 
 // Goals & Tasks Types (feature flagged)
 export interface ClientGoal {
@@ -629,8 +884,8 @@ export interface ClientGoal {
   title: string;
   description?: string;
   target_date?: string;
-  status: 'active' | 'completed' | 'archived';
-  priority: 'low' | 'medium' | 'high';
+  status: "active" | "completed" | "archived";
+  priority: "low" | "medium" | "high";
   current_progress: number; // 0-100
   tasks: GoalTask[];
 }
@@ -648,18 +903,18 @@ export interface AppointmentTask {
   appointment_id: number;
   goal_task_id: number;
   goal_task: GoalTask;
-  status: 'pending' | 'completed' | 'skipped';
+  status: "pending" | "completed" | "skipped";
   completion_notes?: string;
   skip_reason?: string;
   completed_at?: string;
-  completed_via?: 'web' | 'mobile';
+  completed_via?: "web" | "mobile";
 }
 
 // Chat Types
 export interface ChatRoom {
   id: number;
   name?: string;
-  type: 'direct' | 'group';
+  type: "direct" | "group";
   participants: User[];
   last_message?: ChatMessage;
   unread_count: number;
@@ -672,7 +927,7 @@ export interface ChatMessage {
   sender_id: number;
   sender: User;
   content: string;
-  type: 'text' | 'image' | 'file';
+  type: "text" | "image" | "file";
   file_url?: string;
   read_at?: string;
   created_at: string;
@@ -773,15 +1028,15 @@ export interface ClientFormData {
   email: string;
   generate_email: boolean;
   phone: string;
-  gender: 'male' | 'female' | 'other' | '';
+  gender: "male" | "female" | "other" | "";
   date_of_birth: string;
-  facility_id: number | '';
+  facility_id: number | "";
   address: string;
   city: string;
   state: string;
   zip: string;
-  status: '1' | '0';
-  case_manager_id: number | '';
+  status: "1" | "0";
+  case_manager_id: number | "";
   case_manager_new: boolean;
   case_manager_name: string;
   case_manager_email: string;
@@ -792,8 +1047,8 @@ export interface ClientFormData {
   authorization_id: string;
   start_date: string;
   end_date: string;
-  is_new_units: 'update' | 'new';
-  correction_type: 'update' | 'correction';
+  is_new_units: "update" | "new";
+  correction_type: "update" | "correction";
   units_notes: string;
   reset_balance: boolean;
   is_monthly: boolean;
@@ -803,7 +1058,7 @@ export interface ClientFormData {
 export interface ClientPreferences {
   general_preferences: {
     languages: string[];
-    coach_gender: 'male' | 'female' | 'any' | null;
+    coach_gender: "male" | "female" | "any" | null;
   };
   schedule_preferences: {
     in_home: SchedulePreference;
