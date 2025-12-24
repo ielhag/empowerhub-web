@@ -120,10 +120,7 @@ export default function NewNEMTRequestPage() {
   const [formData, setFormData] = useState<NEMTRequestFormData | null>(null);
   const [errors, setErrors] = useState<FormErrors>({});
   const [showAdditionalOptions, setShowAdditionalOptions] = useState(false);
-  const [timeWarnings, setTimeWarnings] = useState<{
-    message: string;
-    type: 'warning' | 'error' | '';
-  }>({ message: '', type: '' });
+  const [formInitialized, setFormInitialized] = useState(false);
 
   // Fetch client data
   const { data: client, isLoading: clientLoading } = useQuery({
@@ -137,11 +134,13 @@ export default function NewNEMTRequestPage() {
   });
 
   // Initialize form when client loads
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: form initialization from async data
   useEffect(() => {
-    if (client && !formData) {
+    if (client && !formInitialized) {
       setFormData(getDefaultFormData(client));
+      setFormInitialized(true);
     }
-  }, [client, formData]);
+  }, [client, formInitialized]);
 
   // Previous requests for quick fill
   const previousRequests = useMemo(() => {
@@ -189,22 +188,22 @@ export default function NewNEMTRequestPage() {
     );
   }, [client, getMissingClientData]);
 
-  // Validate time range
-  const validateTimeRange = useCallback(() => {
+  // Validate time range - derived value using useMemo
+  const timeWarnings = useMemo(() => {
+    const emptyWarning = { message: '', type: '' as const };
+
     if (!formData?.appointment_start_time || !formData?.appointment_end_time) {
-      setTimeWarnings({ message: '', type: '' });
-      return;
+      return emptyWarning;
     }
 
     const start = formData.appointment_start_time;
     const end = formData.appointment_end_time;
 
     if (start >= end) {
-      setTimeWarnings({
+      return {
         message: 'End time must be after start time',
-        type: 'error',
-      });
-      return;
+        type: 'error' as const,
+      };
     }
 
     const startParts = start.split(':').map(Number);
@@ -214,19 +213,14 @@ export default function NewNEMTRequestPage() {
     const durationMinutes = endMinutes - startMinutes;
 
     if (durationMinutes > 480) {
-      setTimeWarnings({
+      return {
         message: 'Appointment duration exceeds 8 hours. Please verify times.',
-        type: 'warning',
-      });
-      return;
+        type: 'warning' as const,
+      };
     }
 
-    setTimeWarnings({ message: '', type: '' });
-  }, [formData?.appointment_start_time, formData?.appointment_end_time]);
-
-  useEffect(() => {
-    validateTimeRange();
-  }, [validateTimeRange]);
+    return emptyWarning;
+  }, [formData]);
 
   // Handle form field changes
   const updateField = <K extends keyof NEMTRequestFormData>(

@@ -47,7 +47,7 @@ export function VerificationMapModal({
       L = leaflet.default;
 
       // Import leaflet CSS - ignore type error for CSS import
-      // @ts-ignore
+      // @ts-expect-error CSS import has no types
       await import('leaflet/dist/leaflet.css');
 
       // Clean up existing map

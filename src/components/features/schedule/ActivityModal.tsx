@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { X, Clock, AlertCircle, Loader2, Calendar, MapPin } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { X, Clock, AlertCircle, Loader2, Calendar, MapPin, ChevronDown, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, parseISO, isSameDay, isAfter, differenceInMinutes } from 'date-fns';
 import {
@@ -10,13 +10,14 @@ import {
   ACTIVITY_TYPES,
   type ACTIVITY_TYPE_COLORS,
 } from '@/hooks/useTeamActivities';
+import { useTeamMembers } from '@/hooks/useTeam';
 import type { TeamActivity, TeamActivityType } from '@/types';
 
 interface ActivityModalProps {
   isOpen: boolean;
   onClose: () => void;
-  teamId: number;
-  teamName: string;
+  teamId?: number; // Optional - if not provided, show team selector
+  teamName?: string;
   activity?: TeamActivity; // For editing
   onSuccess?: () => void;
 }
@@ -74,8 +75,8 @@ const DEFAULT_FORM_DATA: FormData = {
 export function ActivityModal({
   isOpen,
   onClose,
-  teamId,
-  teamName,
+  teamId: propTeamId,
+  teamName: propTeamName,
   activity,
   onSuccess,
 }: ActivityModalProps) {
@@ -84,10 +85,47 @@ export function ActivityModal({
   const [error, setError] = useState<string | null>(null);
   const [availableTimeSlots, setAvailableTimeSlots] = useState<AvailableTimeSlotsData | null>(null);
 
+  // State for team selection when teamId is not provided
+  const [selectedTeamId, setSelectedTeamId] = useState<number | null>(propTeamId || null);
+  const [teamSearchQuery, setTeamSearchQuery] = useState('');
+  const [showTeamDropdown, setShowTeamDropdown] = useState(false);
+
+  // Fetch team members when no teamId is provided
+  // Only fetch if modal is open and no teamId is pre-provided
+  const shouldFetchTeamMembers = isOpen && !propTeamId;
+  const { data: teamMembersData, isLoading: isLoadingTeamMembers } = useTeamMembers(
+    shouldFetchTeamMembers ? { status: 'active', per_page: 100 } : { per_page: 0 }
+  );
+
+  // Filter team members based on search query
+  const filteredTeamMembers = useMemo(() => {
+    if (!teamMembersData?.data) return [];
+    if (!teamSearchQuery) return teamMembersData.data;
+    const query = teamSearchQuery.toLowerCase();
+    return teamMembersData.data.filter(member =>
+      member.name.toLowerCase().includes(query)
+    );
+  }, [teamMembersData?.data, teamSearchQuery]);
+
+  // Determine actual teamId and teamName to use
+  const teamId = propTeamId || selectedTeamId;
+  const selectedMember = teamMembersData?.data?.find(m => m.id === selectedTeamId);
+  const teamName = propTeamName || selectedMember?.name || '';
+
   const isEditing = !!activity;
 
-  const createActivity = useCreateActivity(teamId);
-  const updateActivity = useUpdateActivity(teamId);
+  const createActivity = useCreateActivity(teamId || 0);
+  const updateActivity = useUpdateActivity(teamId || 0);
+
+  // Format datetime for input - defined before effects that use it
+  function formatDateTimeLocal(dateString: string): string {
+    try {
+      const date = parseISO(dateString);
+      return format(date, "yyyy-MM-dd'T'HH:mm");
+    } catch {
+      return '';
+    }
+  }
 
   // Reset form when modal opens/closes or activity changes
   useEffect(() => {
@@ -111,85 +149,87 @@ export function ActivityModal({
       setTimeWarning(null);
       setError(null);
       setAvailableTimeSlots(null);
+      // Reset team selection state
+      setSelectedTeamId(propTeamId || null);
+      setTeamSearchQuery('');
+      setShowTeamDropdown(false);
     }
-  }, [isOpen, activity]);
+  }, [isOpen, activity, propTeamId]);
 
-  // Validate times when they change
+  // Time warnings derived from form data
   useEffect(() => {
-    validateTimes();
-  }, [formData.start_time, formData.end_time]);
+    if (!formData.start_time || !formData.end_time) {
+      setTimeWarning(null);
+      return;
+    }
 
-  // Format datetime for input
-  function formatDateTimeLocal(dateString: string): string {
     try {
-      const date = parseISO(dateString);
-      return format(date, "yyyy-MM-dd'T'HH:mm");
+      const startDate = parseISO(formData.start_time);
+      const endDate = parseISO(formData.end_time);
+
+      // Check if dates are different
+      if (!isSameDay(startDate, endDate)) {
+        setTimeWarning({
+          message: 'Activities must start and end on the same day',
+          type: 'error',
+        });
+        return;
+      }
+
+      // Check if end time is before start time
+      if (!isAfter(endDate, startDate)) {
+        setTimeWarning({
+          message: 'End time must be after start time',
+          type: 'error',
+        });
+        return;
+      }
+
+      // Check for activities longer than 8 hours
+      const durationMins = differenceInMinutes(endDate, startDate);
+      if (durationMins > 480) {
+        setTimeWarning({
+          message: 'Activity duration exceeds 8 hours. Please verify this is correct.',
+          type: 'warning',
+        });
+        return;
+      }
+
+      // Check for evening activities (after 6 PM)
+      const startHour = startDate.getHours();
+      if (startHour >= 18) {
+        setTimeWarning({
+          message: 'You are setting an evening start time. Please confirm this is intentional.',
+          type: 'warning',
+        });
+        return;
+      }
+
+      // Check for early morning activities (before 7 AM)
+      if (startHour < 7) {
+        setTimeWarning({
+          message: 'You are setting a very early start time. Please confirm this is intentional.',
+          type: 'warning',
+        });
+        return;
+      }
+
+      setTimeWarning(null);
     } catch {
-      return '';
+      // Ignore parse errors
     }
-  }
-
-  // Validate times
-  function validateTimes() {
-    setTimeWarning(null);
-
-    if (!formData.start_time || !formData.end_time) return;
-
-    const startDate = parseISO(formData.start_time);
-    const endDate = parseISO(formData.end_time);
-
-    // Check if dates are different
-    if (!isSameDay(startDate, endDate)) {
-      setTimeWarning({
-        message: 'Activities must start and end on the same day',
-        type: 'error',
-      });
-      return;
-    }
-
-    // Check if end time is before start time
-    if (!isAfter(endDate, startDate)) {
-      setTimeWarning({
-        message: 'End time must be after start time',
-        type: 'error',
-      });
-      return;
-    }
-
-    // Check for activities longer than 8 hours
-    const durationMins = differenceInMinutes(endDate, startDate);
-    if (durationMins > 480) {
-      setTimeWarning({
-        message: 'Activity duration exceeds 8 hours. Please verify this is correct.',
-        type: 'warning',
-      });
-      return;
-    }
-
-    // Check for evening activities (after 6 PM)
-    const startHour = startDate.getHours();
-    if (startHour >= 18) {
-      setTimeWarning({
-        message: 'You are setting an evening start time. Please confirm this is intentional.',
-        type: 'warning',
-      });
-      return;
-    }
-
-    // Check for early morning activities (before 7 AM)
-    if (startHour < 7) {
-      setTimeWarning({
-        message: 'You are setting a very early start time. Please confirm this is intentional.',
-        type: 'warning',
-      });
-      return;
-    }
-  }
+  }, [formData.start_time, formData.end_time]);
 
   // Handle form submit
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    // Validate team selection
+    if (!teamId) {
+      setError('Please select a team member');
+      return;
+    }
 
     // Validate required fields
     if (!formData.title.trim()) {
@@ -357,10 +397,102 @@ export function ActivityModal({
                 </div>
               )}
 
-              {/* Team member display */}
-              <div className="text-sm text-gray-600 dark:text-gray-400">
-                Team member: <span className="font-medium text-gray-900 dark:text-white">{teamName}</span>
-              </div>
+              {/* Team member display or selector */}
+              {propTeamId ? (
+                <div className="text-sm text-gray-600 dark:text-gray-400">
+                  Team member: <span className="font-medium text-gray-900 dark:text-white">{teamName}</span>
+                </div>
+              ) : (
+                <div className="relative">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Team Member
+                  </label>
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setShowTeamDropdown(!showTeamDropdown)}
+                      className={cn(
+                        'w-full px-3 py-2 border rounded-md text-sm text-left flex items-center justify-between',
+                        'bg-white dark:bg-gray-800',
+                        'text-gray-900 dark:text-gray-100',
+                        'border-gray-300 dark:border-gray-700',
+                        'focus:ring-2 focus:ring-violet-500 focus:border-violet-500'
+                      )}
+                    >
+                      <span className={cn(!teamName && 'text-gray-400')}>
+                        {teamName || 'Select team member...'}
+                      </span>
+                      <ChevronDown className={cn(
+                        'w-4 h-4 text-gray-400 transition-transform',
+                        showTeamDropdown && 'rotate-180'
+                      )} />
+                    </button>
+
+                    {showTeamDropdown && (
+                      <>
+                        <div
+                          className="fixed inset-0 z-10"
+                          onClick={() => setShowTeamDropdown(false)}
+                        />
+                        <div className="absolute z-20 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg max-h-60 overflow-hidden">
+                          {/* Search input */}
+                          <div className="p-2 border-b border-gray-200 dark:border-gray-700">
+                            <input
+                              type="text"
+                              value={teamSearchQuery}
+                              onChange={(e) => setTeamSearchQuery(e.target.value)}
+                              placeholder="Search team members..."
+                              className={cn(
+                                'w-full px-3 py-2 border rounded-md text-sm',
+                                'bg-white dark:bg-gray-900',
+                                'text-gray-900 dark:text-gray-100',
+                                'border-gray-300 dark:border-gray-600',
+                                'placeholder-gray-400',
+                                'focus:ring-2 focus:ring-violet-500 focus:border-violet-500'
+                              )}
+                              autoFocus
+                            />
+                          </div>
+
+                          {/* Team members list */}
+                          <div className="max-h-48 overflow-y-auto">
+                            {isLoadingTeamMembers ? (
+                              <div className="flex items-center justify-center py-4">
+                                <Loader2 className="w-5 h-5 animate-spin text-violet-600" />
+                              </div>
+                            ) : filteredTeamMembers.length === 0 ? (
+                              <div className="px-3 py-4 text-sm text-gray-500 dark:text-gray-400 text-center">
+                                No team members found
+                              </div>
+                            ) : (
+                              filteredTeamMembers.map((member) => (
+                                <button
+                                  key={member.id}
+                                  type="button"
+                                  onClick={() => {
+                                    setSelectedTeamId(member.id);
+                                    setShowTeamDropdown(false);
+                                    setTeamSearchQuery('');
+                                  }}
+                                  className={cn(
+                                    'w-full px-3 py-2 text-sm text-left flex items-center gap-2 hover:bg-gray-100 dark:hover:bg-gray-700',
+                                    selectedTeamId === member.id && 'bg-violet-50 dark:bg-violet-900/20'
+                                  )}
+                                >
+                                  <div className="w-6 h-6 rounded-full bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center">
+                                    <User className="w-3 h-3 text-violet-600 dark:text-violet-400" />
+                                  </div>
+                                  <span className="text-gray-900 dark:text-white">{member.name}</span>
+                                </button>
+                              ))
+                            )}
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* Type and Title row */}
               <div className="grid grid-cols-2 gap-4">

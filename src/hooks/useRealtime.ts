@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useCallback, useRef } from 'react';
+import { useEffect, useCallback, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   getPusher,
@@ -45,29 +45,35 @@ export function useChannel(
   channelName: string,
   isPrivate = false
 ): Channel | null {
-  const channelRef = useRef<Channel | null>(null);
+  const [channel, setChannel] = useState<Channel | null>(null);
   const { isAuthenticated } = useAuthStore();
 
   useEffect(() => {
-    if (!isAuthenticated || !channelName) return;
+    if (!isAuthenticated || !channelName) {
+      setChannel(null);
+      return;
+    }
 
+    let subscribedChannel: Channel | null = null;
     try {
-      channelRef.current = isPrivate
+      subscribedChannel = isPrivate
         ? subscribeToPrivateChannel(channelName)
         : subscribeToChannel(channelName);
+      setChannel(subscribedChannel);
     } catch (error) {
       console.error(`Failed to subscribe to ${channelName}:`, error);
+      setChannel(null);
     }
 
     return () => {
       if (channelName) {
         unsubscribeFromChannel(isPrivate ? `private-${channelName}` : channelName);
-        channelRef.current = null;
+        setChannel(null);
       }
     };
   }, [channelName, isPrivate, isAuthenticated]);
 
-  return channelRef.current;
+  return channel;
 }
 
 // Hook for real-time appointment updates

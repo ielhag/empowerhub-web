@@ -377,14 +377,16 @@ export default function AppointmentForm({ appointment, onSuccess, onCancel }: Ap
 
       setNemtLoading(true);
       try {
-        const response = await api.get<{ success: boolean; data: NEMTOccurrence[] }>(
+        // Backend returns array directly, not wrapped in { success, data }
+        const response = await api.get<NEMTOccurrence[]>(
           `/tenant-api/nemt-requests/occurrences/${clientId}/${date}`
         );
-        setNemtOccurrences(response.data.data || []);
+        const occurrences = Array.isArray(response.data) ? response.data : [];
+        setNemtOccurrences(occurrences);
 
         // If editing and appointment has NEMT, set the selected occurrence
         if (appointment?.nemt_occurrence_id) {
-          const existing = response.data.data?.find(o => o.id === appointment.nemt_occurrence_id);
+          const existing = occurrences.find(o => o.id === appointment.nemt_occurrence_id);
           if (existing) {
             setSelectedNemtOccurrence(existing);
           }

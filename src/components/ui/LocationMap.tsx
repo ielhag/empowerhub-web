@@ -32,10 +32,11 @@ export function LocationMap({ tracks, clientAddress, className = '' }: LocationM
       L = leaflet.default;
 
       // Import leaflet CSS - ignore type error for CSS import
-      // @ts-ignore
+      // @ts-expect-error CSS import has no types
       await import('leaflet/dist/leaflet.css');
 
       // Fix default marker icons
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Leaflet internal hack for icon URLs
       delete (L.Icon.Default.prototype as any)._getIconUrl;
       L.Icon.Default.mergeOptions({
         iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',

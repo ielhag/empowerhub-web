@@ -30,6 +30,37 @@ interface RichTextEditorProps {
   className?: string;
 }
 
+// Extracted outside the component to prevent recreation on each render
+function ToolbarButton({
+  onClick,
+  isActive = false,
+  disabled = false,
+  children,
+  title,
+}: {
+  onClick: () => void;
+  isActive?: boolean;
+  disabled?: boolean;
+  children: React.ReactNode;
+  title: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      title={title}
+      className={cn(
+        "p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors",
+        isActive && "bg-violet-100 dark:bg-violet-900 text-violet-600 dark:text-violet-400",
+        disabled && "opacity-50 cursor-not-allowed"
+      )}
+    >
+      {children}
+    </button>
+  );
+}
+
 export function RichTextEditor({
   content,
   onChange,
@@ -85,34 +116,6 @@ export function RichTextEditor({
       editor.chain().focus().setLink({ href: url }).run();
     }
   };
-
-  const ToolbarButton = ({
-    onClick,
-    isActive = false,
-    disabled = false,
-    children,
-    title,
-  }: {
-    onClick: () => void;
-    isActive?: boolean;
-    disabled?: boolean;
-    children: React.ReactNode;
-    title: string;
-  }) => (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      title={title}
-      className={cn(
-        "p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors",
-        isActive && "bg-violet-100 dark:bg-violet-900 text-violet-600 dark:text-violet-400",
-        disabled && "opacity-50 cursor-not-allowed"
-      )}
-    >
-      {children}
-    </button>
-  );
 
   return (
     <div

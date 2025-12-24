@@ -205,86 +205,86 @@ async function fetchWeatherData(
     const response = await fetch(url);
 
     if (!response.ok) {
-      console.error('Weather API error:', response.status, response.statusText);
+      console.error("Weather API error:", response.status, response.statusText);
       return {};
     }
 
     const data = await response.json();
 
     if (!data.daily?.time) {
-      console.error('Weather API returned unexpected data structure:', data);
+      console.error("Weather API returned unexpected data structure:", data);
       return {};
     }
 
-  const weatherIcons: Record<number, string> = {
-    0: "☀️",
-    1: "🌤️",
-    2: "⛅",
-    3: "☁️",
-    45: "🌫️",
-    48: "🌫️",
-    51: "🌦️",
-    53: "🌧️",
-    55: "🌧️",
-    61: "🌧️",
-    63: "🌧️",
-    65: "🌧️",
-    71: "🌨️",
-    73: "🌨️",
-    75: "🌨️",
-    77: "🌨️",
-    80: "🌦️",
-    81: "🌧️",
-    82: "⛈️",
-    85: "🌨️",
-    86: "🌨️",
-    95: "⛈️",
-    96: "⛈️",
-    99: "⛈️",
-  };
-
-  const weatherDescriptions: Record<number, string> = {
-    0: "Clear sky",
-    1: "Mainly clear",
-    2: "Partly cloudy",
-    3: "Overcast",
-    45: "Foggy",
-    48: "Foggy",
-    51: "Light drizzle",
-    53: "Drizzle",
-    55: "Heavy drizzle",
-    61: "Light rain",
-    63: "Rain",
-    65: "Heavy rain",
-    71: "Light snow",
-    73: "Snow",
-    75: "Heavy snow",
-    77: "Snow grains",
-    80: "Light showers",
-    81: "Rain showers",
-    82: "Heavy showers",
-    85: "Light snow showers",
-    86: "Heavy snow showers",
-    95: "Thunderstorm",
-    96: "Thunderstorm with hail",
-    99: "Severe thunderstorm",
-  };
-
-  const weatherData: Record<string, WeatherData> = {};
-  data.daily.time.forEach((date: string, index: number) => {
-    const weatherCode = data.daily.weathercode[index];
-    weatherData[date] = {
-      icon: weatherIcons[weatherCode] || "🌡️",
-      temp: Math.round(data.daily.temperature_2m_max[index]),
-      minTemp: Math.round(data.daily.temperature_2m_min[index]),
-      description: weatherDescriptions[weatherCode] || "Unknown",
-      code: weatherCode,
+    const weatherIcons: Record<number, string> = {
+      0: "☀️",
+      1: "🌤️",
+      2: "⛅",
+      3: "☁️",
+      45: "🌫️",
+      48: "🌫️",
+      51: "🌦️",
+      53: "🌧️",
+      55: "🌧️",
+      61: "🌧️",
+      63: "🌧️",
+      65: "🌧️",
+      71: "🌨️",
+      73: "🌨️",
+      75: "🌨️",
+      77: "🌨️",
+      80: "🌦️",
+      81: "🌧️",
+      82: "⛈️",
+      85: "🌨️",
+      86: "🌨️",
+      95: "⛈️",
+      96: "⛈️",
+      99: "⛈️",
     };
-  });
 
-  return weatherData;
+    const weatherDescriptions: Record<number, string> = {
+      0: "Clear sky",
+      1: "Mainly clear",
+      2: "Partly cloudy",
+      3: "Overcast",
+      45: "Foggy",
+      48: "Foggy",
+      51: "Light drizzle",
+      53: "Drizzle",
+      55: "Heavy drizzle",
+      61: "Light rain",
+      63: "Rain",
+      65: "Heavy rain",
+      71: "Light snow",
+      73: "Snow",
+      75: "Heavy snow",
+      77: "Snow grains",
+      80: "Light showers",
+      81: "Rain showers",
+      82: "Heavy showers",
+      85: "Light snow showers",
+      86: "Heavy snow showers",
+      95: "Thunderstorm",
+      96: "Thunderstorm with hail",
+      99: "Severe thunderstorm",
+    };
+
+    const weatherData: Record<string, WeatherData> = {};
+    data.daily.time.forEach((date: string, index: number) => {
+      const weatherCode = data.daily.weathercode[index];
+      weatherData[date] = {
+        icon: weatherIcons[weatherCode] || "🌡️",
+        temp: Math.round(data.daily.temperature_2m_max[index]),
+        minTemp: Math.round(data.daily.temperature_2m_min[index]),
+        description: weatherDescriptions[weatherCode] || "Unknown",
+        code: weatherCode,
+      };
+    });
+
+    return weatherData;
   } catch (error) {
-    console.error('Error fetching weather data:', error);
+    console.error("Error fetching weather data:", error);
     return {};
   }
 }
@@ -296,24 +296,30 @@ async function fetchHolidays(year: number): Promise<Holiday[]> {
     const response = await fetch(url);
 
     if (!response.ok) {
-      console.error('Holidays API error:', response.status, response.statusText);
+      console.error(
+        "Holidays API error:",
+        response.status,
+        response.statusText
+      );
       return [];
     }
 
     const data = await response.json();
 
     if (data.error) {
-      console.error('Holidays API returned error:', data.error);
+      console.error("Holidays API returned error:", data.error);
       return [];
     }
 
-    return data.map((holiday: { date: string; name: string; localName: string }) => ({
-      date: holiday.date,
-      name: holiday.name,
-      localName: holiday.localName,
-    }));
+    return data.map(
+      (holiday: { date: string; name: string; localName: string }) => ({
+        date: holiday.date,
+        name: holiday.name,
+        localName: holiday.localName,
+      })
+    );
   } catch (error) {
-    console.error('Error fetching holidays:', error);
+    console.error("Error fetching holidays:", error);
     return [];
   }
 }
@@ -374,7 +380,7 @@ export function useHolidays(year: number) {
  * Service delivery speciality short names that indicate a staff member
  * should appear in the schedule builder (not purely administrative staff)
  */
-const SERVICE_DELIVERY_SPECIALITIES = ['CE', 'SH', 'RC', 'SFC'];
+const SERVICE_DELIVERY_SPECIALITIES = ["CE", "SH", "RC", "SFC"];
 
 /**
  * Speciality hierarchy - higher skilled staff can see lower level specialities
@@ -382,23 +388,27 @@ const SERVICE_DELIVERY_SPECIALITIES = ['CE', 'SH', 'RC', 'SFC'];
  * CE (Community Engagement) staff can only see CE appointments
  */
 const SPECIALITY_HIERARCHY: Record<string, string[]> = {
-  'SH': ['SH', 'SFC', 'CE', 'RC'], // SH staff can see all
-  'RC': ['RC', 'SFC', 'CE'],       // RC staff can see RC, SFC, CE
-  'SFC': ['SFC', 'CE'],            // SFC staff can see SFC and CE
-  'CE': ['CE'],                     // CE staff can only see CE
+  SH: ["SH", "SFC", "CE", "RC"], // SH staff can see all
+  RC: ["RC", "SFC", "CE"], // RC staff can see RC, SFC, CE
+  SFC: ["SFC", "CE"], // SFC staff can see SFC and CE
+  CE: ["CE"], // CE staff can only see CE
 };
 
 /**
  * Get all specialities a user can see based on their highest speciality
  */
-function getVisibleSpecialities(userSpecialities: { short_name?: string }[]): string[] {
+function getVisibleSpecialities(
+  userSpecialities: { short_name?: string }[]
+): string[] {
   if (!userSpecialities || userSpecialities.length === 0) return [];
 
   // Get the highest level speciality the user has
-  const userShortNames = userSpecialities.map(s => s.short_name?.toUpperCase()).filter(Boolean) as string[];
+  const userShortNames = userSpecialities
+    .map((s) => s.short_name?.toUpperCase())
+    .filter(Boolean) as string[];
 
   // Check from highest to lowest
-  const hierarchyOrder = ['SH', 'RC', 'SFC', 'CE'];
+  const hierarchyOrder = ["SH", "RC", "SFC", "CE"];
   for (const spec of hierarchyOrder) {
     if (userShortNames.includes(spec)) {
       return SPECIALITY_HIERARCHY[spec] || [spec];
@@ -450,7 +460,7 @@ export function useScheduleBuilder(filters: ScheduleFilters) {
 
     // If user is staff, only show their own row
     if (isStaffUser && userTeamId) {
-      members = members.filter(m => m.id === userTeamId);
+      members = members.filter((m) => m.id === userTeamId);
     }
 
     return members;
@@ -467,7 +477,7 @@ export function useScheduleBuilder(filters: ScheduleFilters) {
     const visibleSpecs = getVisibleSpecialities(userSpecialities);
     if (visibleSpecs.length === 0) return [];
 
-    return openShiftsQuery.data.filter(shift => {
+    return openShiftsQuery.data.filter((shift) => {
       const shiftSpec = shift.speciality_short_name?.toUpperCase();
       return shiftSpec && visibleSpecs.includes(shiftSpec);
     });
@@ -481,13 +491,20 @@ export function useScheduleBuilder(filters: ScheduleFilters) {
   // Real-time updates via Pusher (if available)
   useEffect(() => {
     // Check if Pusher is available
-    if (typeof window !== "undefined" && (window as unknown as { Echo?: unknown }).Echo) {
-      const Echo = (window as unknown as { Echo: {
-        private: (channel: string) => {
-          listen: (event: string, callback: () => void) => void;
-        };
-        leave: (channel: string) => void;
-      } }).Echo;
+    if (
+      typeof window !== "undefined" &&
+      (window as unknown as { Echo?: unknown }).Echo
+    ) {
+      const Echo = (
+        window as unknown as {
+          Echo: {
+            private: (channel: string) => {
+              listen: (event: string, callback: () => void) => void;
+            };
+            leave: (channel: string) => void;
+          };
+        }
+      ).Echo;
 
       const channel = Echo.private("appointments");
 
@@ -511,7 +528,9 @@ export function useScheduleBuilder(filters: ScheduleFilters) {
       openShiftsQuery.isLoading ||
       specialitiesQuery.isLoading,
     isError:
-      staffQuery.isError || openShiftsQuery.isError || specialitiesQuery.isError,
+      staffQuery.isError ||
+      openShiftsQuery.isError ||
+      specialitiesQuery.isError,
     error: staffQuery.error || openShiftsQuery.error || specialitiesQuery.error,
     refreshSchedule,
   };
@@ -598,6 +617,34 @@ export function formatTime(time: string): string {
   return `${hour12}:${minutes.toString().padStart(2, "0")} ${period}`;
 }
 
+// Format time show only hours no minutes if minutes is 0 example of time 2025-12-24T03:00:00.000000Z
+/**
+ * Format time from ISO datetime string.
+ * If minutes is 0, show only the hour (e.g., "3 PM").
+ * Handles timezones if present (e.g., "Z" or offsets).
+ * Examples:
+ *   "2025-12-24T03:00:00.000000Z"       => "3 AM"
+ *   "2025-12-24T15:30:00.000000-08:00"  => "3:30 PM"
+ */
+export function formatTimeNoMinutesIfZero(time: string): string {
+  if (!time) return "";
+
+  // Convert to Date - let Date handle any timezone in the string
+  const date = new Date(time);
+  if (isNaN(date.getTime())) return "";
+
+  const hours = date.getHours();
+  const minutes = date.getMinutes();
+  const period = hours >= 12 ? "PM" : "AM";
+  let hour12 = hours % 12;
+  if (hour12 === 0) hour12 = 12;
+
+  if (minutes === 0) {
+    return `${hour12} ${period}`;
+  }
+  return `${hour12}:${minutes.toString().padStart(2, "0")} ${period}`;
+}
+
 /**
  * Format datetime from "YYYY-MM-DD HH:mm" to "h:mm A"
  */
@@ -612,42 +659,49 @@ export function formatTimeFromDatetime(datetime: string): string {
  */
 export function getDateFromDatetime(datetime: string): string {
   if (!datetime) return "";
+  // Handle both "YYYY-MM-DD HH:MM:SS" and "YYYY-MM-DDTHH:MM:SS" formats
+  if (datetime.includes("T")) {
+    return datetime.split("T")[0];
+  }
   return datetime.split(" ")[0];
 }
 
 /**
  * Get appointment color classes based on speciality or status
  */
-export function getAppointmentColorClasses(
-  appointment: ScheduleAppointment
-): { bg: string; border: string; text: string } {
+export function getAppointmentColorClasses(appointment: ScheduleAppointment): {
+  bg: string;
+  border: string;
+  text: string;
+} {
   // Color by speciality
-  const colorMap: Record<number, { bg: string; border: string; text: string }> = {
-    1: {
-      // Community Engagement
-      bg: "bg-violet-100 dark:bg-violet-900/50",
-      border: "border-violet-300 dark:border-violet-700",
-      text: "text-violet-800 dark:text-violet-200",
-    },
-    3: {
-      // Specialized Habilitation
-      bg: "bg-green-100 dark:bg-green-900/50",
-      border: "border-green-300 dark:border-green-700",
-      text: "text-green-800 dark:text-green-200",
-    },
-    4: {
-      // Staff & Family Consulting
-      bg: "bg-red-100 dark:bg-red-900/50",
-      border: "border-red-300 dark:border-red-700",
-      text: "text-red-800 dark:text-red-200",
-    },
-    6: {
-      // Respite Care
-      bg: "bg-blue-100 dark:bg-blue-900/50",
-      border: "border-blue-300 dark:border-blue-700",
-      text: "text-blue-800 dark:text-blue-200",
-    },
-  };
+  const colorMap: Record<number, { bg: string; border: string; text: string }> =
+    {
+      1: {
+        // Community Engagement
+        bg: "bg-violet-100 dark:bg-violet-900/50",
+        border: "border-violet-300 dark:border-violet-700",
+        text: "text-violet-800 dark:text-violet-200",
+      },
+      3: {
+        // Specialized Habilitation
+        bg: "bg-green-100 dark:bg-green-900/50",
+        border: "border-green-300 dark:border-green-700",
+        text: "text-green-800 dark:text-green-200",
+      },
+      4: {
+        // Staff & Family Consulting
+        bg: "bg-red-100 dark:bg-red-900/50",
+        border: "border-red-300 dark:border-red-700",
+        text: "text-red-800 dark:text-red-200",
+      },
+      6: {
+        // Respite Care
+        bg: "bg-blue-100 dark:bg-blue-900/50",
+        border: "border-blue-300 dark:border-blue-700",
+        text: "text-blue-800 dark:text-blue-200",
+      },
+    };
 
   if (appointment.speciality_id && colorMap[appointment.speciality_id]) {
     return colorMap[appointment.speciality_id];
@@ -754,7 +808,10 @@ export function hasTimeOffOnDate(
 /**
  * Check if staff member is available on a specific date
  */
-export function isAvailableOnDate(member: StaffMember, dateStr: string): boolean {
+export function isAvailableOnDate(
+  member: StaffMember,
+  dateStr: string
+): boolean {
   // Check working hours
   const hasWorkingHours = member.working_hours && member.working_hours[dateStr];
 
@@ -928,7 +985,10 @@ export function getAppointmentPositionStyle(
 /**
  * Format date for display
  */
-export function formatDate(dateStr: string, format: "short" | "long" = "short"): string {
+export function formatDate(
+  dateStr: string,
+  format: "short" | "long" = "short"
+): string {
   const date = new Date(dateStr + "T00:00:00");
 
   if (format === "short") {

@@ -410,11 +410,36 @@ export function AppointmentQuickView({
                     </span>
                   </div>
                 )}
-                {appointment.nemt_occurrence.confirmed_pickup_time && (
+                {/* Pickup Time */}
+                {(appointment.nemt_occurrence.confirmed_pickup_time ||
+                  appointment.nemt_occurrence.pickup_time_from ||
+                  appointment.nemt_occurrence.pickup_window_start) && (
                   <div className="flex justify-between">
                     <span className="text-gray-500">Pickup</span>
                     <span className="text-gray-700 dark:text-gray-300">
-                      {formatTime(appointment.nemt_occurrence.confirmed_pickup_time)}
+                      {appointment.nemt_occurrence.confirmed_pickup_time
+                        ? formatTime(appointment.nemt_occurrence.confirmed_pickup_time)
+                        : appointment.nemt_occurrence.pickup_time_from && appointment.nemt_occurrence.pickup_time_to
+                          ? `${formatTime(appointment.nemt_occurrence.pickup_time_from)} - ${formatTime(appointment.nemt_occurrence.pickup_time_to)}`
+                          : appointment.nemt_occurrence.pickup_window_start && appointment.nemt_occurrence.pickup_window_end
+                            ? `${formatTime(appointment.nemt_occurrence.pickup_window_start)} - ${formatTime(appointment.nemt_occurrence.pickup_window_end)}`
+                            : formatTime(appointment.nemt_occurrence.pickup_time_from || appointment.nemt_occurrence.pickup_window_start || '')
+                      }
+                    </span>
+                  </div>
+                )}
+                {/* Return/Drop-off Time */}
+                {(appointment.nemt_occurrence.return_time_from ||
+                  appointment.nemt_occurrence.return_window_start) && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Drop-off</span>
+                    <span className="text-gray-700 dark:text-gray-300">
+                      {appointment.nemt_occurrence.return_time_from && appointment.nemt_occurrence.return_time_to
+                        ? `${formatTime(appointment.nemt_occurrence.return_time_from)} - ${formatTime(appointment.nemt_occurrence.return_time_to)}`
+                        : appointment.nemt_occurrence.return_window_start && appointment.nemt_occurrence.return_window_end
+                          ? `${formatTime(appointment.nemt_occurrence.return_window_start)} - ${formatTime(appointment.nemt_occurrence.return_window_end)}`
+                          : formatTime(appointment.nemt_occurrence.return_time_from || appointment.nemt_occurrence.return_window_start || '')
+                      }
                     </span>
                   </div>
                 )}

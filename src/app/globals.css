@@ -148,3 +148,14 @@ body {
   border: 1px solid rgb(249, 115, 22) !important;
   animation: pulse-orange 2s infinite;
 }
+
+/* Dark mode visibility for custom appointment colors in day view timeline */
+.dark [data-appt-custom-color] {
+  background-color: color-mix(
+    in srgb,
+    var(--appt-color) 50%,
+    transparent
+  ) !important;
+  border-color: color-mix(in srgb, var(--appt-color) 90%, white) !important;
+  color: var(--appt-color) !important;
+}
